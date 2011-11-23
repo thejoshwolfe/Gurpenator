@@ -68,20 +68,21 @@ First Aid: IQ E {
     default = Physician
 }
 Surgery: IQ V {
-    default = First Aid - 8
+    default = First Aid - 12, Physician - 5, Physiology - 8, Veterinary - 5
 }
 
 Fast Draw: DX E {
+    default = None
     abstract = true
 }
 
 Fast Draw (Dice) = Fast Draw
 
 Strategy: IQ H {
-    default = IQ - 6, Intelligence Analysis - 6, Tactics - 6
+    default += Intelligence Analysis - 6, Tactics - 6
 }
 Tactics: IQ H {
-    default = IQ - 6, Strategy - 6
+    default += Strategy - 6
 }
 
 Survival: Per A {
@@ -102,9 +103,7 @@ Lifting: HT A {
 *: * A {
     default = $1 - 5
 }
-*: HT E {
-    default = HT - 4
+*: * H {
+    default = $1 - 6
 }
-*: IQ H {
-    default = IQ - 6
-}
+
