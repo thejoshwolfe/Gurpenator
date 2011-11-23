@@ -1,0 +1,65 @@
+
+[Advantages]
+
+ST: 10 * (level - 10)
+DX: 20 * (level - 10)
+IQ: 20 * (level - 10)
+HT: 10 * (level - 10)
+
+HP: 2 * (level - ST)
+Will: 5 * (level - IQ)
+Per: 5 * (level - IQ)
+FP: 3 * (level - HT)
+
+
+No Fine Manipulators: -30 {
+    ST.cost -= 40%
+    DX.cost -= 40%
+}
+
+Size: 0 {
+}
+
+Charisma: 5 * level {
+    Fortune Telling += level
+}
+
+Damage Resistance: 5 * level {
+    Focused Absorption: +80% "asldfnaisdfi"
+    Wild Absorption: +100% "basldfnaisdfi"
+    Directional (Front): -40%
+}
+
+Combat Reflexes: 15 {
+    "+6 to IQ rolls to wake up or to recover from surprise or mental stun"
+    Dodge += 1
+    Parry += 1
+    Block += 1
+    Fright Check += 2
+    Fast Draw += 1
+}
+
+Enhanced Dodge: 15 {
+    Dodge += 1
+}
+
+Fearlessness: 2 * level {
+    Fright Check += level
+}
+
+
+[Skills]
+
+Stealth: DX A
+Physician: IQ H
+First Aid: IQ E {
+    default = Physician
+}
+Surgery: IQ V {
+    default = First Aid - 8
+}
+
+Fast Draw: DX E
+
+Fast Draw (Dice) = Fast Draw
+
