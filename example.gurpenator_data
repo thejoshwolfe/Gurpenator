@@ -20,6 +20,9 @@ Damage:
 Dodge:
 Parry:
 Block:
+Fright Check = Will {
+    max = 14
+}
 
 No Fine Manipulators: -30 {
     ST.cost -= 40%
@@ -34,8 +37,8 @@ Charisma: 5 * level {
 }
 
 Damage Resistance: 5 * level {
-    Focused Absorption: +80% "asldfnaisdfi"
-    Wild Absorption: +100% "basldfnaisdfi"
+    Focused Absorption: +80% "specific attribute or healing"
+    Wild Absorption: +100% "any attribute per hit"
     Directional (Front): -40%
 }
 
@@ -45,7 +48,7 @@ Combat Reflexes: 15 {
     Parry += 1
     Block += 1
     Fright Check += 2
-    Fast Draw += 1
+    Fast Draw * += 1
 }
 
 Enhanced Dodge: 15 {
@@ -68,7 +71,40 @@ Surgery: IQ V {
     default = First Aid - 8
 }
 
-Fast Draw: DX E
+Fast Draw: DX E {
+    abstract = true
+}
 
 Fast Draw (Dice) = Fast Draw
 
+Strategy: IQ H {
+    default = IQ - 6, Intelligence Analysis - 6, Tactics - 6
+}
+Tactics: IQ H {
+    default = IQ - 6, Strategy - 6
+}
+
+Survival: Per A {
+    abstract = true
+}
+Survival (Plain) = Survival
+
+Singing: HT E
+Swimming: HT E
+
+Lifting: HT A {
+    default = None
+}
+
+*: * E {
+    default = $1 - 4
+}
+*: * A {
+    default = $1 - 5
+}
+*: HT E {
+    default = HT - 4
+}
+*: IQ H {
+    default = IQ - 6
+}
