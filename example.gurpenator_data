@@ -11,6 +11,15 @@ Will: 5 * (level - IQ)
 Per: 5 * (level - IQ)
 FP: 3 * (level - HT)
 
+BL:
+Speed:
+Move:
+Size:
+
+Damage:
+Dodge:
+Parry:
+Block:
 
 No Fine Manipulators: -30 {
     ST.cost -= 40%
