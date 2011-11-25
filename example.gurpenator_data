@@ -1,6 +1,4 @@
 
-[Advantages]
-
 ST: 10 * (level - 10)
 DX: 20 * (level - 10)
 IQ: 20 * (level - 10)
@@ -48,7 +46,7 @@ Combat Reflexes: 15 {
     Parry += 1
     Block += 1
     Fright Check += 2
-    Fast Draw * += 1
+    Fast Draw += 1
 }
 
 Enhanced Dodge: 15 {
@@ -60,7 +58,18 @@ Fearlessness: 2 * level {
 }
 
 
-[Skills]
+# These are the default defaults for skills.
+# To allow them, use "default += ...".
+# To remove them, use "default = ...".
+# *: * E {
+#     default = $1 - 4
+# }
+# *: * A {
+#     default = $1 - 5
+# }
+# *: * H {
+#     default = $1 - 6
+# }
 
 Stealth: DX A
 Physician: IQ H
@@ -95,15 +104,5 @@ Swimming: HT E
 
 Lifting: HT A {
     default = None
-}
-
-*: * E {
-    default = $1 - 4
-}
-*: * A {
-    default = $1 - 5
-}
-*: * H {
-    default = $1 - 6
 }
 

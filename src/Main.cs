@@ -14,6 +14,7 @@ namespace Gurpenator
         public Main()
         {
             InitializeComponent();
+            DataLoader.readData(new string[] {"../../example.gurpenator_data"}.ToList());
         }
     }
 }
