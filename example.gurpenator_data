@@ -1,33 +1,49 @@
 
-ST: 10 * (level - 10)
-DX: 20 * (level - 10)
-IQ: 20 * (level - 10)
-HT: 10 * (level - 10)
+# These attributes must be defined
 
-HP: 2 * (level - ST)
+ST:  10 * (level - 10)
+DX:  20 * (level - 10)
+IQ:  20 * (level - 10)
+HT:  10 * (level - 10)
+
+HP:   2 * (level - ST)
 Will: 5 * (level - IQ)
-Per: 5 * (level - IQ)
-FP: 3 * (level - HT)
+Per:  5 * (level - IQ)
+FP:   3 * (level - HT)
 
-BL:
-Speed:
-Move:
-Size:
+Basic Lift ST = ST
+Basic Lift = (Basic Lift ST * Basic Lift ST) / 5
+Basic Speed x4: 5 * (level - (HT + DX)) "Divide by 4 for actual Basic Speed in yards per second"
+Basic Move: 5 * (level - (Basic Speed x4 / 4)) "in yards per second"
+Size: 0 * level {
+    ST.cost -= 10% * level
+    HP.cost -= 10% * level
+}
 
 Damage:
 Dodge:
 Parry:
 Block:
-Fright Check = Will {
-    max = 14
-}
+Fright Check:
+
+# The below are the implicit defaults for skills.
+# To add other defaults, use "default += ...".
+# To replace the implicit defaults with other defaults, use "default = ...".
+# To disallow any defaults, use "default = None"
+# *: * E {
+#     default = attribute - 4
+# }
+# *: * A {
+#     default = attribute - 5
+# }
+# *: * H {
+#     default = attribute - 6
+# }
+
 
 No Fine Manipulators: -30 {
     ST.cost -= 40%
     DX.cost -= 40%
-}
-
-Size: 0 {
 }
 
 Charisma: 5 * level {
@@ -58,18 +74,6 @@ Fearlessness: 2 * level {
 }
 
 
-# These are the default defaults for skills.
-# To allow them, use "default += ...".
-# To remove them, use "default = ...".
-# *: * E {
-#     default = $1 - 4
-# }
-# *: * A {
-#     default = $1 - 5
-# }
-# *: * H {
-#     default = $1 - 6
-# }
 
 Stealth: DX A
 Physician: IQ H
@@ -82,7 +86,7 @@ Surgery: IQ V {
 
 Fast Draw: DX E {
     default = None
-    abstract = true
+    category = true
 }
 
 Fast Draw (Dice) = Fast Draw
@@ -95,7 +99,7 @@ Tactics: IQ H {
 }
 
 Survival: Per A {
-    abstract = true
+    category = true
 }
 Survival (Plain) = Survival
 
