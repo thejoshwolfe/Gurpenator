@@ -65,11 +65,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\DataLoader.cs" />
-    <Compile Include="src\Main.cs">
+    <Compile Include="src\Gurpenator.cs" />
+    <Compile Include="src\MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="src\Main.Designer.cs">
-      <DependentUpon>Main.cs</DependentUpon>
+    <Compile Include="src\MainWindow.Designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="src\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -82,8 +83,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="src\Main.resx">
-      <DependentUpon>Main.cs</DependentUpon>
+    <EmbeddedResource Include="src\MainWindow.resx">
+      <DependentUpon>MainWindow.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

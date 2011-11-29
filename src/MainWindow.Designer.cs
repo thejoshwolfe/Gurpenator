@@ -1,6 +1,6 @@
 ﻿namespace Gurpenator
 {
-    partial class Main
+    partial class MainWindow
     {
         /// <summary>
         /// Required designer variable.

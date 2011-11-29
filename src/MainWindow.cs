@@ -9,9 +9,9 @@ using System.Windows.Forms;
 
 namespace Gurpenator
 {
-    public partial class Main : Form
+    public partial class MainWindow : Form
     {
-        public Main()
+        public MainWindow()
         {
             InitializeComponent();
             DataLoader.readData(new string[] {"../../example.gurpenator_data"}.ToList());
