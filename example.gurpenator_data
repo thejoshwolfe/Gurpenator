@@ -20,11 +20,18 @@ Size: 0 * level {
     HP.cost -= 10% * level
 }
 
-Damage:
-Dodge:
-Parry:
-Block:
-Fright Check:
+
+Damage ST = ST
+
+# for dice roll values:
+#   0 -> 1d
+#   4 -> 2d
+#   etc.
+# This strength
+Thrust = (Damage ST - 13) / 2
+Swing = Damage ST - 10
+Dodge = Basic Move + 3
+Fright Check = 2 * (level - Will)
 
 # The below are the implicit defaults for skills.
 # To add other defaults, use "default += ...".
