@@ -1,20 +1,38 @@
 
 # These attributes must be defined
 
-ST:  10 * (level - 10)
-DX:  20 * (level - 10)
-IQ:  20 * (level - 10)
-HT:  10 * (level - 10)
+ST:  10 * level {
+    HP += level
+}
+DX:  20 * level {
+    Basic Speed x4 += level
+}
+IQ:  20 * level {
+    Will += level
+    Per += level
+}
+HT:  10 * level {
+    FP += level
+}
 
-HP:   2 * (level - ST)
-Will: 5 * (level - IQ)
-Per:  5 * (level - IQ)
-FP:   3 * (level - HT)
+HP: 2 * level
+Will: 5 * level
+Per: 5 * level
+FP: 3 * level
+
+Human: 0 {
+    ST += 10
+    DX += 10
+    IQ += 10
+    HT += 10
+}
 
 Basic Lift ST = ST
 Basic Lift = (Basic Lift ST * Basic Lift ST) / 5
-Basic Speed x4: 5 * (level - (HT + DX)) "Divide by 4 for actual Basic Speed in yards per second"
-Basic Move: 5 * (level - (Basic Speed x4 / 4)) "in yards per second"
+Basic Speed x4: 5 * level "Divide by 4 for actual Basic Speed in yards per second" {
+    Basic Move += level / 4
+}
+Basic Move: 5 * level "in yards per second"
 Size: 0 * level {
     ST.cost -= 10% * level
     HP.cost -= 10% * level
