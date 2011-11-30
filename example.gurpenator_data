@@ -54,7 +54,7 @@ Fright Check = 2 * (level - Will)
 # The below are the implicit defaults for skills.
 # To add other defaults, use "default += ...".
 # To replace the implicit defaults with other defaults, use "default = ...".
-# To disallow any defaults, use "default = None"
+# To disallow any defaults, use "default = none"
 # *: * E {
 #     default = attribute - 4
 # }
@@ -110,7 +110,7 @@ Surgery: IQ V {
 }
 
 Fast Draw: DX E {
-    default = None
+    default = none
     category = true
 }
 
@@ -132,6 +132,6 @@ Singing: HT E
 Swimming: HT E
 
 Lifting: HT A {
-    default = None
+    default = none
 }
 
