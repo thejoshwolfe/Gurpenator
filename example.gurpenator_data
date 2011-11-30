@@ -116,6 +116,11 @@ Fast Draw: DX E {
 
 Fast Draw (Dice) = Fast Draw
 
+Invisibility Art: IQ V {
+    default = none
+    requires = Trained By A Master AND Hypnotism >= 14 AND Stealth >= 14
+}
+
 Strategy: IQ H {
     default += Intelligence Analysis - 6, Tactics - 6
 }
