@@ -189,20 +189,20 @@ namespace Gurpenator
         {
             return new FormulaParser().parse(text, parsedThing);
         }
-        private static readonly List<List<string>> operatorPrecidenceGroups = new List<List<string>> {
+        private static readonly List<List<string>> operatorPrecedenceGroups = new List<List<string>> {
             new List<string> { "*", "/" },
             new List<string> { "+", "-" },
             new List<string> { "<=", "<", ">=", ">" },
             new List<string> { "AND", "OR" },
             new List<string> { "," },
         };
-        // the lower the number, the higher the precidence
+        // the lower the number, the higher the precedence
         private static readonly Dictionary<string, int> operatorPriority = new Dictionary<string, int>();
-        private static readonly int lowestPriority = operatorPrecidenceGroups.Count + 1;
+        private static readonly int lowestPriority = operatorPrecedenceGroups.Count + 1;
         static FormulaParser()
         {
-            for (int i = 0; i < operatorPrecidenceGroups.Count; i++)
-                foreach (string operator_ in operatorPrecidenceGroups[i])
+            for (int i = 0; i < operatorPrecedenceGroups.Count; i++)
+                foreach (string operator_ in operatorPrecedenceGroups[i])
                     operatorPriority.Add(operator_, i + 1); // start with 1
         }
         private Formula parse(string text, ParsedThing parsedThing)
