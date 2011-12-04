@@ -42,12 +42,14 @@ Size: 0 * level {
 Damage ST = ST
 
 # for dice roll values:
-#   0 -> 1d
-#   4 -> 2d
-#   etc.
-# This strength
-Thrust = (Damage ST - 13) / 2
-Swing = Damage ST - 10
+#   4 -> 1d
+#   5 -> 1d + 1
+#   6 -> 1d + 2
+#   7 -> 2d - 1
+#   8 -> 2d
+#   ...
+Thrust = IF ST<=40 THEN (ST - 5) / 2 ELSE IF ST<=60 THEN (ST + 5) * 2 / 5 ELSE IF ST<=70 THEN (ST + 5) * 2 / 5 + 1 ELSE (ST + 10) * 2 / 5
+Swing = IF ST<=8 THEN (ST - 3) / 2 ELSE IF ST<=26 THEN ST - 6 ELSE IF ST<=40 THEN (ST + 15) / 2 ELSE IF ST<=55 THEN (ST + 25) * 2 / 5 + 1 ELSE (ST + 30) * 2 / 5
 Dodge = Basic Move + 3
 Fright Check = 2 * (level - Will)
 

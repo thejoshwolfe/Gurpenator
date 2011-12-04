@@ -42,29 +42,30 @@ namespace Gurpenator
 
         private static GurpsProperty interpretParsedThing(ParsedThing parsedThing)
         {
-            if (parsedThing.declarationOperator == ":" && skillFormulaRegex.IsMatch(parsedThing.formula))
-                return interpretSkill(parsedThing);
-            return interpretAttribute(parsedThing);
-        }
-        private static GurpsProperty interpretAttribute(ParsedThing parsedThing)
-        {
             switch (parsedThing.declarationOperator)
             {
                 case ":":
-                    Formula costFormula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
-                    return new Advantage(parsedThing, costFormula);
+                    if (skillFormulaRegex.IsMatch(parsedThing.formula))
+                    {
+                        SkillDifficulty difficulty = difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
+                        Formula formula = FormulaParser.parseFormula(parsedThing.formula.Remove(parsedThing.formula.Length - 1), parsedThing);
+                        return new Skill(parsedThing, difficulty, formula);
+                    }
+                    else
+                    {
+                        Formula costFormula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
+                        return new Advantage(parsedThing, costFormula);
+                    }
+                case ":=":
+                    throw null;
                 case "=":
-                    Formula formula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
-                    return new AttributeFunction(parsedThing, formula);
+                    {
+                        Formula formula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
+                        return new AttributeFunction(parsedThing, formula);
+                    }
                 default:
                     throw new Exception("ERROR: Expected ':' or '='. Got '" + parsedThing.declarationOperator + "' " + parsedThing.getLocationString());
             }
-        }
-        private static GurpsProperty interpretSkill(ParsedThing parsedThing)
-        {
-            SkillDifficulty difficulty = difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
-            Formula formula = FormulaParser.parseFormula(parsedThing.formula.Remove(parsedThing.formula.Length - 1), parsedThing);
-            return new Skill(parsedThing, difficulty, formula);
         }
         private static SkillDifficulty difficultyFromChar(char c)
         {
@@ -187,122 +188,176 @@ namespace Gurpenator
     {
         public static Formula parseFormula(string text, ParsedThing parsedThing)
         {
-            return new FormulaParser().parse(text, parsedThing);
+            return new FormulaParser(parsedThing).parse(text);
         }
         private static readonly List<List<string>> operatorPrecedenceGroups = new List<List<string>> {
             new List<string> { "*", "/" },
             new List<string> { "+", "-" },
             new List<string> { "<=", "<", ">=", ">" },
-            new List<string> { "AND", "OR" },
+            new List<string> { "AND" },
+            new List<string> { "OR" },
+            new List<string> { "IF" },
             new List<string> { "," },
         };
         // the lower the number, the higher the precedence
         private static readonly Dictionary<string, int> operatorPriority = new Dictionary<string, int>();
-        private static readonly int lowestPriority = operatorPrecedenceGroups.Count + 1;
         static FormulaParser()
         {
             for (int i = 0; i < operatorPrecedenceGroups.Count; i++)
                 foreach (string operator_ in operatorPrecedenceGroups[i])
-                    operatorPriority.Add(operator_, i + 1); // start with 1
+                    operatorPriority.Add(operator_, i);
         }
-        private Formula parse(string text, ParsedThing parsedThing)
-        {
-            var fullyParenthesized = new List<Token>();
-            // http://en.wikipedia.org/wiki/Operator-precedence_parser#Alternatives_to_Dijkstra.27s_Algorithm
-            Action<Token, int> addToList = delegate(Token token, int times)
-            {
-                for (int i = 0; i < times; i++)
-                    fullyParenthesized.Add(token);
-            };
-            addToList(SymbolToken.OpenParens, lowestPriority);
-            Token previousToken = null;
-            foreach (Token token in tokenize(text))
-            {
-                SymbolToken symbolToken = token as SymbolToken;
-                if (symbolToken != null)
-                {
-                    switch (symbolToken.text)
-                    {
-                        case "(":
-                            addToList(SymbolToken.OpenParens, lowestPriority);
-                            break;
-                        case ")":
-                            addToList(SymbolToken.CloseParens, lowestPriority);
-                            break;
-                        case "+":
-                        case "-":
-                            if (hasOpenRight(previousToken))
-                            {
-                                // actually a "positive" or "negavite" unary operator. not a "plus" or "minus".
-                                if (symbolToken.text == "+")
-                                    break; // let's not even acknowledge unary plus
-                                fullyParenthesized.Add(token);
-                                break;
-                            }
-                            goto default; // handle "plus" and "minus" with the rest of the binary operators
-                        default:
-                            addToList(SymbolToken.CloseParens, operatorPriority[symbolToken.text]);
-                            fullyParenthesized.Add(token);
-                            addToList(SymbolToken.OpenParens, operatorPriority[symbolToken.text]);
-                            break;
-                    }
-                }
-                else
-                {
-                    fullyParenthesized.Add(token);
-                }
-                previousToken = token;
-            }
-            addToList(SymbolToken.CloseParens, lowestPriority);
 
+        private ParsedThing parsedThing;
+        public FormulaParser(ParsedThing parsedThing)
+        {
+            this.parsedThing = parsedThing;
+        }
+        private void throwError(string message)
+        {
+            throw new Exception("ERROR: " + message + " " + parsedThing.getLocationString());
+        }
+        private Formula parse(string text)
+        {
+            List<Token> tokens = new List<Token>(tokenize(text));
             int index = 0;
-            Func<Token> getNextToken = delegate()
+            Action<string> checkNextTokenIsSymbol = delegate(string symbolText)
             {
-                if (index < fullyParenthesized.Count)
-                    return fullyParenthesized[index++];
-                throw new Exception("ERROR: unexpected end of formula " + parsedThing.getLocationString());
+                if (index >= tokens.Count)
+                    throwError("unexpected end of formula");
+                SymbolToken result = tokens[index++] as SymbolToken;
+                if (result == null || result.text != symbolText)
+                    throwError("expected '" + symbolText + "'. got '" + tokens[index - 1].ToString() + "'");
             };
             Func<Formula> recurse = null;
             recurse = delegate()
             {
-                Token firstToken = getNextToken();
-                if (!(firstToken is SymbolToken))
-                    return firstToken.toFormula();
-                SymbolToken symbolToken = (SymbolToken)firstToken;
-                switch (symbolToken.text)
+                List<Formula> treeBuffer = new List<Formula>();
                 {
-                    case "(":
-                        Formula accumulator = recurse();
-                        while (true)
+                    Func<bool> hasOpenRight = delegate()
+                    {
+                        if (treeBuffer.Count == 0)
+                            return true;
+                        return !(treeBuffer[treeBuffer.Count - 1] is Formula.Leaf);
+                    };
+                    while (index < tokens.Count)
+                    {
+                        Token token = tokens[index++];
+                        SymbolToken symbolToken = token as SymbolToken;
+                        if (symbolToken == null)
                         {
-                            SymbolToken nextToken = getNextToken() as SymbolToken;
-                            if (nextToken == null)
-                                throw new Exception("ERROR: expected symbol. found '" + fullyParenthesized[index - 1].ToString() + "' " + parsedThing.getLocationString());
-                            if (nextToken.text == ")")
-                                return accumulator;
-                            // binary operator
-                            Formula right = recurse();
-                            accumulator = new Formula.Binary(accumulator, nextToken, right);
+                            treeBuffer.Add(token.toFormula());
+                            continue;
                         }
-                    case "-":
-                        return new Formula.Unary(symbolToken.text, recurse());
-                    default:
-                        throw new Exception("ERROR: unexpected symbol '" + symbolToken.text + "' " + parsedThing.getLocationString());
+                        switch (symbolToken.text)
+                        {
+                            case "(":
+                                treeBuffer.Add(recurse());
+                                checkNextTokenIsSymbol(")");
+                                break;
+                            case "IF":
+                                {
+                                    Formula condition = recurse();
+                                    checkNextTokenIsSymbol("THEN");
+                                    Formula thenPart = recurse();
+                                    checkNextTokenIsSymbol("ELSE");
+                                    treeBuffer.Add(new Formula.Conditional(symbolToken, condition, thenPart));
+                                    break;
+                                }
+                            case ")":
+                            case "THEN":
+                            case "ELSE":
+                                index--;
+                                goto breakMainFor;
+                            case "+":
+                            case "-":
+                                if (hasOpenRight())
+                                {
+                                    // actually a "positive" or "negavite" unary operator. not a "plus" or "minus".
+                                    if (symbolToken.text == "+")
+                                        break; // let's not even acknowledge unary plus
+                                    treeBuffer.Add(new Formula.UnaryPrefix(symbolToken));
+                                    break;
+                                }
+                                goto default; // handle "plus" and "minus" with the rest of the binary operators
+                            default:
+                                if (!operatorPriority.ContainsKey(symbolToken.text))
+                                    throwError("symbol out of place '" + symbolToken.text + "'");
+                                treeBuffer.Add(new Formula.Binary(symbolToken));
+                                break;
+                        }
+                    }
+                }
+            breakMainFor:
+                // group the tree buffer into a proper tree
+                {
+                    Action<int> checkHasClosedLeft = delegate(int i)
+                    {
+                        if (i >= treeBuffer.Count)
+                            throwError("unexpected end of expression after '" + treeBuffer[i - 1].ToString() + "'");
+                        Formula formula = treeBuffer[i];
+                        if (formula is Formula.Binary)
+                            if (((Formula.Binary)formula).left == Formula.NullFormula.Instance)
+                                throwError("expected something between '" + treeBuffer[i - 1].ToString() + "' and '" + ((Formula.Binary)formula).operator_.text + "'");
+                    };
+                    Action<int> checkHasClosedRight = delegate(int i)
+                    {
+                        if (i < 0)
+                            throwError("can't start an expression with '" + treeBuffer[i + 1].ToString() + "'");
+                        Formula formula = treeBuffer[i];
+                        if (formula is Formula.Binary)
+                            if (((Formula.Binary)formula).right == Formula.NullFormula.Instance)
+                                throwError("expected something between '" + ((Formula.Binary)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
+                        if (formula is Formula.UnaryPrefix)
+                            if (((Formula.UnaryPrefix)formula).operand == Formula.NullFormula.Instance)
+                                throwError("expected something between '" + ((Formula.UnaryPrefix)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
+                    };
+                    // O(n*n*m). Oh well.
+                    foreach (List<string> operatorGroup in operatorPrecedenceGroups)
+                    {
+                        // prefix operators first so that -1-2 is (-1)-2 instead of -(1-2).
+                        for (int i = treeBuffer.Count - 1; i >= 0; i--)
+                        {
+                            Formula.UnaryPrefix unaryPrefix = treeBuffer[i] as Formula.UnaryPrefix;
+                            if (unaryPrefix == null || unaryPrefix.operand != Formula.NullFormula.Instance)
+                                continue;
+                            if (!operatorGroup.Contains(unaryPrefix.operator_.text))
+                                continue;
+                            checkHasClosedLeft(i + 1);
+                            unaryPrefix.operand = treeBuffer[i + 1];
+                            treeBuffer.RemoveAt(i + 1);
+                        }
+                        for (int i = 0; i < treeBuffer.Count; i++)
+                        {
+                            Formula.Binary binary = treeBuffer[i] as Formula.Binary;
+                            if (binary == null || binary.left != Formula.NullFormula.Instance)
+                                continue;
+                            if (binary.right != Formula.NullFormula.Instance)
+                                throw null;
+                            if (!operatorGroup.Contains(binary.operator_.text))
+                                continue;
+                            checkHasClosedLeft(i + 1);
+                            checkHasClosedRight(i - 1);
+                            binary.left = treeBuffer[i - 1];
+                            binary.right = treeBuffer[i + 1];
+                            treeBuffer.RemoveAt(i - 1);
+                            i--;
+                            treeBuffer.RemoveAt(i + 1);
+                        }
+                    }
+                    if (treeBuffer.Count == 0)
+                        throwError("empty expression");
+                    if (treeBuffer.Count > 1)
+                        throwError("expected end of expression after '" + treeBuffer[0].ToString() + "'");
+                    return treeBuffer[0];
                 }
             };
-            return recurse();
-        }
-
-        private bool hasOpenRight(Token token)
-        {
-            if (token == null)
-                return true;
-            if (!(token is SymbolToken))
-                return false;
-            string symbol = ((SymbolToken)token).text;
-            if (symbol == ")")
-                return false;
-            return true;
+            {
+                Formula result = recurse();
+                if (index != tokens.Count)
+                    throwError("expected end of expression. got '" + tokens[index].ToString() + "'");
+                return result;
+            }
         }
 
         private static Regex tokenizerRegex = new Regex(
@@ -375,8 +430,6 @@ namespace Gurpenator
     }
     public class SymbolToken : Token
     {
-        public static readonly SymbolToken OpenParens = new SymbolToken("(");
-        public static readonly SymbolToken CloseParens = new SymbolToken(")");
         public readonly string text;
         public SymbolToken(string text)
         {
