@@ -1,0 +1,52 @@
+
+# These core attributes must be defined
+
+ST: 10 * level {
+    HP += level
+}
+DX: 20 * level {
+    Basic Speed x4 += level
+}
+IQ: 20 * level {
+    Will += level
+    Per += level
+}
+HT: 10 * level {
+    FP += level
+}
+
+HP: 2 * level
+Will: 5 * level
+Per: 5 * level
+FP: 3 * level
+
+# standard human template
+Human: 0 {
+    ST += 10
+    DX += 10
+    IQ += 10
+    HT += 10
+}
+
+Basic Lift ST = ST
+Basic Lift = (Basic Lift ST * Basic Lift ST) / 5
+Basic Speed x4: 5 * level "Divide by 4 for actual Basic Speed in yards per second" {
+    Basic Move += level / 4
+}
+Basic Move: 5 * level "in yards per second"
+
+# This is defined as its own attribute so that advantages can modify it without touching main ST.
+Damage ST = ST
+
+# to convert from an integer to dice roll values:
+#   4 -> 1d
+#   5 -> 1d + 1
+#   6 -> 1d + 2
+#   7 -> 2d - 1
+#   8 -> 2d
+#   ...
+Thrust = IF ST<=40 THEN (ST - 5) / 2 ELSE IF ST<=60 THEN (ST + 5) * 2 / 5 ELSE IF ST<=70 THEN (ST + 5) * 2 / 5 + 1 ELSE (ST + 10) * 2 / 5
+Swing = IF ST<=8 THEN (ST - 3) / 2 ELSE IF ST<=26 THEN ST - 6 ELSE IF ST<=40 THEN (ST + 15) / 2 ELSE IF ST<=55 THEN (ST + 25) * 2 / 5 + 1 ELSE (ST + 30) * 2 / 5
+Dodge = Basic Move + 3
+Fright Check = 2 * (level - Will)
+

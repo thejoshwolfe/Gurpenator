@@ -1,57 +1,80 @@
+# This file contains examples of how to define advantages and skills.
+# See also core.gurpenator_data for the core attribute definitions.
+# The information here is somewhat accurate, but not nearly complete enough for practical use.
+# You will probably not want to use this file for realz.
 
-# These attributes must be defined
 
-ST:  10 * level {
-    HP += level
-}
-DX:  20 * level {
-    Basic Speed x4 += level
-}
-IQ:  20 * level {
-    Will += level
-    Per += level
-}
-HT:  10 * level {
-    FP += level
+# The simplest syntax for advantage is just a name and a point cost.
+Sealed: 15
+
+# Further details of the advantage such as the effect on attributes
+# are specified in "{}" on multiple lines like this:
+Enhanced Dodge: 15 {
+    Dodge += 1
 }
 
-HP: 2 * level
-Will: 5 * level
-Per: 5 * level
-FP: 3 * level
+# Disadvantages are only different from advantages in that they have a negative cost.
+# The software makes no profound distinction between advantages, disadvantages, and even attributes.
+# The three will be referred to as "advantages" for brevity sake.
+Bloodlust: -10
 
-Human: 0 {
-    ST += 10
-    DX += 10
-    IQ += 10
-    HT += 10
+# Advantages can affect the cost of other advantages.
+No Fine Manipulators: -30 {
+    ST.cost -= 40%
+    DX.cost -= 40%
+    # "-=" means "reduce by".
 }
 
-Basic Lift ST = ST
-Basic Lift = (Basic Lift ST * Basic Lift ST) / 5
-Basic Speed x4: 5 * level "Divide by 4 for actual Basic Speed in yards per second" {
-    Basic Move += level / 4
+# Not all affects are possible to describe technically, so any subtleties can be documented
+# in double-quotes like this:
+Trained By A Master: 30 "half penalty to Rapid Strike and multiple Parries per turn"
+# or for multi-line traits, you can put the comment as the first line inside the "{}".
+Combat Reflexes: 15 {
+    "+6 to IQ rolls to wake up or to recover from surprise or mental stun"
+    Dodge += 1
+    Parry += 1
+    Block += 1
+    Fright Check += 2
+    Fast Draw += 1
 }
-Basic Move: 5 * level "in yards per second"
+
+# For advantages that have levels, use "level" as a variable in a mathematical
+# expression to describe the cost.
+Charisma: 5 * level {
+    Fortune Telling += level
+}
+# This means the cost of 3 levels of Charisma would be 5 * 3 = 15.
+
+# The "level" variable can also be used inside the "{}".
 Size: 0 * level {
     ST.cost -= 10% * level
     HP.cost -= 10% * level
 }
+# cost discounts are automatically capped at 80%
 
+# Define enhancements and limitations inside the "{}" with a name and a point cost modifier.
+Damage Resistance: 5 * level {
+    # "Absorption" has 2 different versions, so we list them as separate enhancements.
+    Focused Absorption: +80% "specific attribute or healing"
+    Wild Absorption: +100% "any attribute per hit"
+    # a limitation is just an enhancement with a negative cost
+    Directional (Front): -40%
+}
 
-Damage ST = ST
+# Enhancements can have their own "{}" complexities.
+Duplication: 35 * level {
+    Digital: -60% {
+        # "Possession.Digital" means "Possession with the Digital limitation".
+        # See below for a discussion of "requires".
+        requires = Digital Mind AND Possession.Digital
+    }
+}
+# (just defining these so that the above references will not cause errors)
+Digital Mind: 5
+Possession: 100 {
+    Digital: -40%
+}
 
-# for dice roll values:
-#   4 -> 1d
-#   5 -> 1d + 1
-#   6 -> 1d + 2
-#   7 -> 2d - 1
-#   8 -> 2d
-#   ...
-Thrust = IF ST<=40 THEN (ST - 5) / 2 ELSE IF ST<=60 THEN (ST + 5) * 2 / 5 ELSE IF ST<=70 THEN (ST + 5) * 2 / 5 + 1 ELSE (ST + 10) * 2 / 5
-Swing = IF ST<=8 THEN (ST - 3) / 2 ELSE IF ST<=26 THEN ST - 6 ELSE IF ST<=40 THEN (ST + 15) / 2 ELSE IF ST<=55 THEN (ST + 25) * 2 / 5 + 1 ELSE (ST + 30) * 2 / 5
-Dodge = Basic Move + 3
-Fright Check = 2 * (level - Will)
 
 # The below are the implicit defaults for skills.
 # To add other defaults, use "default += ...".
@@ -68,77 +91,106 @@ Fright Check = 2 * (level - Will)
 # }
 
 
-No Fine Manipulators: -30 {
-    ST.cost -= 40%
-    DX.cost -= 40%
-}
+# simple skills (these have implicit defaults. see above.)
+Occultism: IQ A
+Sling: DX H
 
-Charisma: 5 * level {
-    Fortune Telling += level
+# skills with implicit defaults plus more defaults
+Biology: IQ V {
+    default += Naturalist - 6
 }
-
-Damage Resistance: 5 * level {
-    Focused Absorption: +80% "specific attribute or healing"
-    Wild Absorption: +100% "any attribute per hit"
-    Directional (Front): -40%
+Naturalist: IQ H {
+    default += Biology - 3
 }
-
-Combat Reflexes: 15 {
-    "+6 to IQ rolls to wake up or to recover from surprise or mental stun"
-    Dodge += 1
-    Parry += 1
-    Block += 1
-    Fright Check += 2
-    Fast Draw += 1
-}
-
-Enhanced Dodge: 15 {
-    Dodge += 1
-}
-
-Fearlessness: 2 * level {
-    Fright Check += level
+Boating: DX A {
+    default += IQ - 5
 }
 
 
-
-Stealth: DX A
-Physician: IQ H
-First Aid: IQ E {
-    default = Physician
+# skills with only explicit defaults
+Lip Reading: Per A {
+    default = Per - 10
 }
-Surgery: IQ V {
-    default = First Aid - 12, Physician - 5, Physiology - 8, Veterinary - 5
+Musical Composition: IQ H {
+    default = Musical Instrument - 2, Poetry - 2
 }
+# (just defining these so that the above references will not cause errors)
+Musical Instrument: IQ H
+Poetry: IQ A
 
-Fast Draw: DX E {
+
+# skills with no defaults
+Fire Eating: DX A {
     default = none
-    category = true
+}
+Parry Missile Weapons: DX H {
+    default = none
 }
 
-Fast Draw (Dice) = Fast Draw
 
+# skills with prerequisites
 Invisibility Art: IQ V {
     default = none
-    requires = Trained By A Master AND Hypnotism >= 14 AND Stealth >= 14
+    requires = Trained By A Master OR Hypnotism >= 14 AND Stealth >= 14
+    # ">=" means "greater than or equal to".
+    # A subtle detail in the above formula: the AND operator has a higher precedence than
+    # the OR operator, so "a OR b AND c" is equivalent to "a OR (b AND c)"
+}
+Physics: IQ V {
+    requires = Mathematics (Applied)
+    # omitting a specific skill level (not using a ">=") means at least 1 point must be spent
+    # in the prerequisite to count.
 }
 
-Strategy: IQ H {
-    default += Intelligence Analysis - 6, Tactics - 6
-}
-Tactics: IQ H {
-    default += Strategy - 6
-}
 
+# Skill categories serve to group skills together.
+# Characters cannot put points into skill categories directly.
 Survival: Per A {
     category = true
+    # This default will apply to all members of this category.
+    default += Naturalist - 3
 }
-Survival (Plain) = Survival
+# This is a specific skill that characters can put points into.
+# The base attribute and difficulty are inherited from the category as "Per A".
+Survival (Arctic) := Survival
 
-Singing: HT E
-Swimming: HT E
-
-Lifting: HT A {
-    default = none
+Mathematics: IQ H {
+    category = true
 }
+Mathematics (Applied) := Mathematics
+
+# You must specify some base attribute and difficulty to the category even if it's
+# not going to apply to all members of the category.
+Swords: DX A {
+    category = true
+}
+Force Sword := Swords {
+    # Defaulting to an entire category means defaulting to every member of the category.
+    default += Swords - 3
+}
+# You can override the difficulty of a member of a category like this.
+Knife := Swords E {
+    default += Force Sword - 3
+}
+# Any bonuses or penalties to the category will apply to the member as well.
+
+
+# An optional specialty is a skill that inherits from an ordinary skill rather than a category.
+Chemistry: IQ H
+# The below is an optional specialty.
+# The difficulty is automatically downgraded to "IQ A".
+Chemistry (Analytical) := Chemistry
+# There is no default for optional specialties; just default to the main skill.
+# The main skill defaults to the optional specialty - 2.
+# Any skills that default to the main skill also default to the optional specialty at an additional -2.
+Metallurgy: IQ H {
+    default = Chemistry - 5
+    # also defaults to Chemistry (Analytical) - 7.
+}
+# As with categories, any bonuses or penalties to the main skill will also apply to the specialized skill.
+
+
+# Names of advantages/skills cannot contain "-" as it is used for subtraction in formulas.
+# It is recommended to just use a " " instead of a dash:
+Fortune Telling: IQ A
 
