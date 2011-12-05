@@ -12,7 +12,7 @@ namespace Gurpenator
     }
     public enum SkillDifficulty
     {
-        Easy, Average, Hard, VeryHard
+        Unspecified, Easy, Average, Hard, VeryHard
     }
     public class Skill : GurpsProperty
     {
@@ -23,6 +23,17 @@ namespace Gurpenator
         {
             this.difficulty = difficulty;
             this.formula = formula;
+        }
+    }
+    public class InheritedSkill : GurpsProperty
+    {
+        private SkillDifficulty difficultyOverride;
+        private string parentSkillName;
+        public InheritedSkill(ParsedThing parsedThing, SkillDifficulty difficultyOverride, string parentSkillName)
+            : base(parsedThing)
+        {
+            this.difficultyOverride = difficultyOverride;
+            this.parentSkillName = parentSkillName;
         }
     }
     public class Advantage : GurpsProperty
@@ -57,19 +68,19 @@ namespace Gurpenator
         }
         public class Identifier : Leaf
         {
-            private IdentifierToken text;
-            public Identifier(IdentifierToken text)
+            public IdentifierToken token;
+            public Identifier(IdentifierToken token)
             {
-                this.text = text;
+                this.token = token;
             }
             public override string ToString()
             {
-                return text.ToString();
+                return token.ToString();
             }
         }
         public class IntLiteral : Leaf
         {
-            private IntToken value;
+            public IntToken value;
             public IntLiteral(IntToken value)
             {
                 this.value = value;
@@ -81,7 +92,7 @@ namespace Gurpenator
         }
         public class PercentLiteral : Leaf
         {
-            private PercentToken value;
+            public PercentToken value;
             public PercentLiteral(PercentToken value)
             {
                 this.value = value;

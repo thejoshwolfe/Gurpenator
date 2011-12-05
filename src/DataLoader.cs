@@ -14,7 +14,7 @@ namespace Gurpenator
         private const string nameMiddleCharacters = "0-9" + nameBeginningCharacters;
         private const string namePattern = "[" + nameBeginningCharacters + "][" + nameMiddleCharacters + "]*";
         private const string commentPattern = "\"(.*?)\"";
-        private static readonly Regex thingStartLineRegex = new Regex(@"^\s*(" + namePattern + @")(?:\.(" + namePattern + @"))?\s*(:|=|\+=|-=)([^\{" + "\"" + "]*)(?:" + commentPattern + @")?\s*(\{)?\s*$");
+        private static readonly Regex thingStartLineRegex = new Regex(@"^\s*(" + namePattern + @")(?:\.(" + namePattern + @"))?\s*(:=|:|=|\+=|-=)([^\{" + "\"" + "]*)(?:" + commentPattern + @")?\s*(\{)?\s*$");
         private static readonly Regex commentRegex = new Regex(@"^\s*" + commentPattern + @"\s*$");
         private static readonly Regex skillFormulaRegex = new Regex("^.+ [EAHV]$");
 
@@ -57,14 +57,26 @@ namespace Gurpenator
                         return new Advantage(parsedThing, costFormula);
                     }
                 case ":=":
-                    throw null;
+                    {
+                        SkillDifficulty difficulty = SkillDifficulty.Unspecified;
+                        string formulaText = parsedThing.formula;
+                        if (skillFormulaRegex.IsMatch(parsedThing.formula))
+                        {
+                            difficulty = difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
+                            formulaText = parsedThing.formula.Remove(parsedThing.formula.Length - 1);
+                        }
+                        Formula formula = FormulaParser.parseFormula(formulaText, parsedThing);
+                        if (!(formula is Formula.Identifier))
+                            throw new Exception("ERROR: expected name of skill. got '" + formulaText + "' " + parsedThing.getLocationString());
+                        return new InheritedSkill(parsedThing, difficulty, ((Formula.Identifier)formula).token.text);
+                    }
                 case "=":
                     {
                         Formula formula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
                         return new AttributeFunction(parsedThing, formula);
                     }
                 default:
-                    throw new Exception("ERROR: Expected ':' or '='. Got '" + parsedThing.declarationOperator + "' " + parsedThing.getLocationString());
+                    throw new Exception("ERROR: expected ':', '=', or ':='. Got '" + parsedThing.declarationOperator + "' " + parsedThing.getLocationString());
             }
         }
         private static SkillDifficulty difficultyFromChar(char c)
@@ -367,7 +379,7 @@ namespace Gurpenator
             @"(?<identifier>[A-Za-z_](?:[A-Za-z0-9_ ]*(?:\([A-Za-z0-9_ ]*\))?)*)|" +
             @"(?<invalid>.)" // catch anything else as invalid
         );
-        private static IEnumerable<Token> tokenize(string text)
+        private IEnumerable<Token> tokenize(string text)
         {
             foreach (Match match in tokenizerRegex.Matches(text))
             {
@@ -388,7 +400,8 @@ namespace Gurpenator
                             yield return new IntToken(int.Parse(match.Value));
                         break;
                     case "invalid":
-                        throw new Exception("ERROR: invalid character in formula: " + match.Value);
+                        throwError("invalid character in formula '" + match.Value + "'");
+                        throw null;
                     default:
                         throw null;
                 }
