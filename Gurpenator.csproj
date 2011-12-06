@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="src\DataLoader.cs" />
     <Compile Include="src\Gurpenator.cs" />
+    <Compile Include="src\GurpenatorUI.cs" />
     <Compile Include="src\MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -18,7 +18,7 @@ namespace Gurpenator
         private static readonly Regex commentRegex = new Regex(@"^\s*" + commentPattern + @"\s*$");
         private static readonly Regex skillFormulaRegex = new Regex("^.+ [EAHV]$");
 
-        public static void readData(IEnumerable<string> paths)
+        public static Dictionary<string, GurpsProperty> readData(IEnumerable<string> paths)
         {
             var nameToThing = new Dictionary<string, GurpsProperty>();
             // parse and check for duplicate names
@@ -38,6 +38,10 @@ namespace Gurpenator
                     }
                 }
             }
+
+            // some attributes have special things about them
+            nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
+            return nameToThing;
         }
 
         private static GurpsProperty interpretParsedThing(ParsedThing parsedThing)

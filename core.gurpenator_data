@@ -1,6 +1,8 @@
 
 # These core attributes must be defined
 
+TL: 0 * level
+
 ST: 10 * level {
     HP += level
 }
@@ -49,4 +51,5 @@ Thrust = IF ST<=40 THEN (ST - 5) / 2 ELSE IF ST<=60 THEN (ST + 5) * 2 / 5 ELSE I
 Swing = IF ST<=8 THEN (ST - 3) / 2 ELSE IF ST<=26 THEN ST - 6 ELSE IF ST<=40 THEN (ST + 15) / 2 ELSE IF ST<=55 THEN (ST + 25) * 2 / 5 + 1 ELSE (ST + 30) * 2 / 5
 Dodge = Basic Move + 3
 Fright Check = 2 * (level - Will)
+
 

@@ -1,14 +1,30 @@
-﻿
+﻿using System;
+
 namespace Gurpenator
 {
     public class GurpsProperty
     {
+        public static string formatAsDice(int value)
+        {
+            int dice = Math.Max(1, (value + 1) / 4);
+            int modifier = value - dice * 4;
+            if (modifier < 0)
+                return dice + "d" + modifier;
+            if (modifier == 0)
+                return dice + "d";
+            return dice + "d+" + modifier;
+        }
+
         public string name { get { return parsedThing.name; } }
         public ParsedThing parsedThing;
         public GurpsProperty(ParsedThing parsedThing)
         {
             this.parsedThing = parsedThing;
         }
+
+        public int value { get { return 0; } }
+        public Func<int, string> formattingFunction = delegate(int value) { return value.ToString(); };
+        public string formattedValue { get { return formattingFunction(value); } }
     }
     public enum SkillDifficulty
     {

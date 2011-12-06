@@ -14,7 +14,14 @@ namespace Gurpenator
         public MainWindow()
         {
             InitializeComponent();
-            DataLoader.readData(new string[] {"../../example.gurpenator_data"}.ToList());
+            var nameToThing = DataLoader.readData(new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
+
+            // delete place holders
+            attributesGroup.Controls.Clear();
+            GurpenatorTable table = new GurpenatorTable(attributesGroup);
+            var attributeNames = new string[] { "ST", "DX", "IQ", "HT", "Thrust" };
+            foreach (string name in attributeNames)
+                table.add(new GurpenatorRow(nameToThing[name]));
         }
     }
 }
