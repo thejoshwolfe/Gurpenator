@@ -40,7 +40,7 @@ namespace Gurpenator
         private void addRowControls(GurpenatorRow row)
         {
             table.Controls.Add(row.createHeaderLabel());
-            if (mode == EditorMode.EditMode)
+            if (table.ColumnCount == 4)
             {
                 table.Controls.Add(row.createSpendingSpinner());
                 table.Controls.Add(row.createCostLabel());
@@ -65,7 +65,7 @@ namespace Gurpenator
     }
     public class GurpenatorRow
     {
-        private PurchasedProperty purchasedProperty;
+        protected PurchasedProperty purchasedProperty;
         private NumericUpDown spendingSpinner;
         private Label costLabel;
         private Label outputLabel;
@@ -81,7 +81,7 @@ namespace Gurpenator
             outputLabel = null;
             purchasedProperty.changed -= purchasedProperty_changed;
         }
-        private void purchasedProperty_changed()
+        protected void purchasedProperty_changed()
         {
             if (spendingSpinner != null)
                 spendingSpinner.Value = (decimal)purchasedProperty.PurchasedLevels;
@@ -94,18 +94,13 @@ namespace Gurpenator
         {
             Label header = creatLabel();
             header.TextAlign = ContentAlignment.MiddleLeft;
-            header.Text = purchasedProperty.property.name;
+            header.Text = purchasedProperty.property.DisplayName;
             return header;
         }
-        public Label createCostLabel()
+        public virtual Control createSpendingSpinner()
         {
-            costLabel = creatLabel();
-            costLabel.TextAlign = ContentAlignment.MiddleRight;
-            costLabel.Text = purchasedProperty.cost.ToString();
-            return costLabel;
-        }
-        public NumericUpDown createSpendingSpinner()
-        {
+            if (!purchasedProperty.hasPurchasedLevels)
+                return new Control();
             spendingSpinner = new NumericUpDown();
             spendingSpinner.Minimum = -9999;
             spendingSpinner.Maximum = 9999;
@@ -117,6 +112,15 @@ namespace Gurpenator
                 purchasedProperty.PurchasedLevels = (int)spendingSpinner.Value;
             };
             return spendingSpinner;
+        }
+        public Control createCostLabel()
+        {
+            if (!purchasedProperty.hasCost)
+                return new Control();
+            costLabel = creatLabel();
+            costLabel.TextAlign = ContentAlignment.MiddleRight;
+            costLabel.Text = purchasedProperty.cost.ToString();
+            return costLabel;
         }
         public Label createOutputLabel()
         {

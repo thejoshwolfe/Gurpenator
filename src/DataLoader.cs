@@ -39,11 +39,16 @@ namespace Gurpenator
                 }
             }
 
+            // make sure core attributes are defined
             foreach (string name in GurpsCharacter.coreAttributeNames)
                 if (!nameToThing.ContainsKey(name))
                     throw new Exception("ERROR: missing definition of core trait \"" + name + "\"");
-            // some attributes have special things about them
+            // tweek some attributes specially
             nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
+            nameToThing["Swing"].formattingFunction = GurpsProperty.formatAsDice;
+            // display Basic Speed in m/s rather than Basic Speed x4 in x4m/s.
+            nameToThing["Basic Speed x4"].DisplayName = "Basic Speed";
+            nameToThing["Basic Speed x4"].formattingFunction = delegate(int value) { return (value * 0.25).ToString(); };
             return nameToThing;
         }
 
@@ -61,7 +66,7 @@ namespace Gurpenator
                     else
                     {
                         Formula costFormula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
-                        return new Advantage(parsedThing, costFormula);
+                        return Advantage.create(parsedThing, costFormula);
                     }
                 case ":=":
                     {

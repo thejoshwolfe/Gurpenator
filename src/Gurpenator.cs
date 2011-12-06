@@ -18,6 +18,12 @@ namespace Gurpenator
         }
 
         public string name { get { return parsedThing.name; } }
+        private string displayName = null;
+        public string DisplayName
+        {
+            get { return displayName == null ? name : displayName; }
+            set { displayName = value; }
+        }
         public ParsedThing parsedThing;
         public GurpsProperty(ParsedThing parsedThing)
         {
@@ -52,14 +58,32 @@ namespace Gurpenator
             this.parentSkillName = parentSkillName;
         }
     }
-    public class Advantage : GurpsProperty
+    public abstract class Advantage : GurpsProperty
     {
+        public static GurpsProperty create(ParsedThing parsedThing, Formula costFormula)
+        {
+            if (costFormula.usesLevel())
+                return new IntAdvantage(parsedThing, costFormula);
+            else
+                return new BooleanAdvantage(parsedThing, costFormula);
+        }
+
         public Formula costFormula;
         public Advantage(ParsedThing parsedThing, Formula costFormula)
             : base(parsedThing)
         {
             this.costFormula = costFormula;
         }
+    }
+    public class IntAdvantage : Advantage
+    {
+        public IntAdvantage(ParsedThing parsedThing, Formula costFormula)
+            : base(parsedThing, costFormula) { }
+    }
+    public class BooleanAdvantage : Advantage
+    {
+        public BooleanAdvantage(ParsedThing parsedThing, Formula costFormula)
+            : base(parsedThing, costFormula) { }
     }
     public class AttributeFunction : GurpsProperty
     {
@@ -74,13 +98,17 @@ namespace Gurpenator
     public class PurchasedProperty
     {
         public GurpsProperty property;
-        private int purchasedLevels = 0;
         public PurchasedProperty(GurpsProperty property)
         {
             this.property = property;
         }
         public int level { get { return 0; } }
         public string formattedValue { get { return property.formattingFunction(level); } }
+        public bool hasCost { get { return !(property is AttributeFunction); } }
+        public int cost { get { return 0; } }
+
+        public bool hasPurchasedLevels { get { return property is IntAdvantage; } }
+        private int purchasedLevels = 0;
         public int PurchasedLevels
         {
             get { return purchasedLevels; }
@@ -90,7 +118,6 @@ namespace Gurpenator
                 changed();
             }
         }
-        public int cost { get { return 0; } }
 
         public event Action changed;
     }
@@ -131,6 +158,10 @@ namespace Gurpenator
 
     public abstract class Formula
     {
+        public virtual bool usesLevel()
+        {
+            return false;
+        }
         public class NullFormula : Formula
         {
             public static readonly NullFormula Instance = new NullFormula();
@@ -146,6 +177,10 @@ namespace Gurpenator
             public Identifier(IdentifierToken token)
             {
                 this.token = token;
+            }
+            public override bool usesLevel()
+            {
+                return token.text == "level";
             }
             public override string ToString()
             {
@@ -184,6 +219,10 @@ namespace Gurpenator
             {
                 this.operator_ = operator_;
             }
+            public override bool usesLevel()
+            {
+                return operand.usesLevel();
+            }
             public override string ToString()
             {
                 return "(" + operator_ + operand.ToString() + ")";
@@ -197,6 +236,10 @@ namespace Gurpenator
             public Binary(SymbolToken operator_)
             {
                 this.operator_ = operator_;
+            }
+            public override bool usesLevel()
+            {
+                return left.usesLevel() || right.usesLevel();
             }
             public override string ToString()
             {
@@ -212,6 +255,10 @@ namespace Gurpenator
             {
                 this.condition = condition;
                 this.thenPart = thenPart;
+            }
+            public override bool usesLevel()
+            {
+                return condition.usesLevel() || thenPart.usesLevel() || base.usesLevel();
             }
             public override string ToString()
             {
