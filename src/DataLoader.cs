@@ -18,7 +18,7 @@ namespace Gurpenator
         private static readonly Regex commentRegex = new Regex(@"^\s*" + commentPattern + @"\s*$");
         private static readonly Regex skillFormulaRegex = new Regex("^.+ [EAHV]$");
 
-        private static readonly HashSet<string> reservedWords = new HashSet<string> { "value", "cost" };
+        public static readonly HashSet<string> reservedWords = new HashSet<string> { "level", "cost", "none" };
 
         public static Dictionary<string, GurpsProperty> readData(IEnumerable<string> paths)
         {
@@ -46,7 +46,8 @@ namespace Gurpenator
                 if (!nameToThing.ContainsKey(name))
                     throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
 
-            checkVariableReferences(nameToThing);
+            // check for undefined varaibles and type errors
+            checkFormulas(nameToThing);
 
             // tweek some attributes specially
             nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
@@ -57,11 +58,11 @@ namespace Gurpenator
             return nameToThing;
         }
 
-        private static void checkVariableReferences(Dictionary<string, GurpsProperty> nameToThing)
+        private static void checkFormulas(Dictionary<string, GurpsProperty> nameToThing)
         {
             foreach (GurpsProperty property in nameToThing.Values)
             {
-                EvaluationContext context = new EvaluationContext(nameToThing, property);
+                CheckingContext context = new CheckingContext(nameToThing, property);
                 if (property is Advantage)
                 {
                     Advantage advantage = (Advantage)property;
@@ -89,7 +90,7 @@ namespace Gurpenator
                     else
                     {
                         Formula costFormula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
-                        if (costFormula.usesLevel())
+                        if (costFormula.usedNames().Contains("level"))
                             return new IntAdvantage(parsedThing, costFormula);
                         else
                             return new BooleanAdvantage(parsedThing, costFormula);

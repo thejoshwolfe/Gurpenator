@@ -100,7 +100,7 @@ namespace Gurpenator
         public virtual Control createSpendingSpinner()
         {
             if (!purchasedProperty.hasPurchasedLevels)
-                return new Control();
+                return createFiller();
             spendingSpinner = new NumericUpDown();
             spendingSpinner.Minimum = -9999;
             spendingSpinner.Maximum = 9999;
@@ -116,7 +116,7 @@ namespace Gurpenator
         public Control createCostLabel()
         {
             if (!purchasedProperty.hasCost)
-                return new Control();
+                return createFiller();
             costLabel = creatLabel();
             costLabel.TextAlign = ContentAlignment.MiddleRight;
             costLabel.Text = purchasedProperty.cost.ToString();
@@ -138,6 +138,12 @@ namespace Gurpenator
             label.AutoSize = true;
             label.Dock = DockStyle.Fill;
             return label;
+        }
+        private static Control createFiller()
+        {
+            var result = new Label();
+            result.Size = new Size();
+            return result;
         }
     }
 }

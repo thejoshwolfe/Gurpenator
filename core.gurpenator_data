@@ -18,7 +18,9 @@ HT: 10 * level {
 }
 
 HP: 2 * level
-Will: 5 * level
+Will: 5 * level {
+    Fright Check += level
+}
 Per: 5 * level
 FP: 3 * level
 
@@ -50,6 +52,6 @@ Damage ST = ST
 Thrust = IF ST<=40 THEN (ST - 5) / 2 ELSE IF ST<=60 THEN (ST + 5) * 2 / 5 ELSE IF ST<=70 THEN (ST + 5) * 2 / 5 + 1 ELSE (ST + 10) * 2 / 5
 Swing = IF ST<=8 THEN (ST - 3) / 2 ELSE IF ST<=26 THEN ST - 6 ELSE IF ST<=40 THEN (ST + 15) / 2 ELSE IF ST<=55 THEN (ST + 25) * 2 / 5 + 1 ELSE (ST + 30) * 2 / 5
 Dodge = Basic Move + 3
-Fright Check = 2 * (level - Will)
+Fright Check: 2 * level
 
 
