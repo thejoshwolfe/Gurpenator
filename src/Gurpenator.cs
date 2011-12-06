@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Gurpenator
 {
@@ -22,9 +24,7 @@ namespace Gurpenator
             this.parsedThing = parsedThing;
         }
 
-        public int value { get { return 0; } }
         public Func<int, string> formattingFunction = delegate(int value) { return value.ToString(); };
-        public string formattedValue { get { return formattingFunction(value); } }
     }
     public enum SkillDifficulty
     {
@@ -68,6 +68,64 @@ namespace Gurpenator
             : base(parsedThing)
         {
             this.formula = formula;
+        }
+    }
+
+    public class PurchasedProperty
+    {
+        public GurpsProperty property;
+        private int purchasedLevels = 0;
+        public PurchasedProperty(GurpsProperty property)
+        {
+            this.property = property;
+        }
+        public int level { get { return 0; } }
+        public string formattedValue { get { return property.formattingFunction(level); } }
+        public int PurchasedLevels
+        {
+            get { return purchasedLevels; }
+            set
+            {
+                purchasedLevels = value;
+                changed();
+            }
+        }
+        public int cost { get { return 0; } }
+
+        public event Action changed;
+    }
+
+    public class GurpsCharacter
+    {
+        private static readonly string[] attributeNames = {
+            "TL",
+            "ST", "DX", "IQ", "HT",
+            "HP", "Will", "Per", "FP",
+            "Basic Lift",
+            "Basic Speed x4",
+            "Thrust", "Swing",
+            "Dodge",
+            "Fright Check",
+        };
+        private static readonly string[] hiddenAttributeNames = {
+            "Basic Lift ST",
+            "Damage ST",
+        };
+        public static IEnumerable<string> coreAttributeNames { get { return attributeNames.Concat(hiddenAttributeNames); } }
+
+        private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
+        public GurpsCharacter(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            foreach (string name in coreAttributeNames)
+                nameToPurchasedAttribute[name] = new PurchasedProperty(nameToThing[name]);
+        }
+        public IEnumerable<PurchasedProperty> visibleAttributes
+        {
+            get
+            {
+                foreach (string attributeName in attributeNames)
+                    yield return nameToPurchasedAttribute[attributeName];
+            }
         }
     }
 

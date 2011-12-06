@@ -39,6 +39,9 @@ namespace Gurpenator
                 }
             }
 
+            foreach (string name in GurpsCharacter.coreAttributeNames)
+                if (!nameToThing.ContainsKey(name))
+                    throw new Exception("ERROR: missing definition of core trait \"" + name + "\"");
             // some attributes have special things about them
             nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
             return nameToThing;

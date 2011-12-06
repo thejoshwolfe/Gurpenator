@@ -11,17 +11,29 @@ namespace Gurpenator
 {
     public partial class MainWindow : Form
     {
+        private EditorMode mode = EditorMode.EditMode;
+        private GurpenatorTable table;
         public MainWindow()
         {
             InitializeComponent();
             var nameToThing = DataLoader.readData(new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
 
             // delete place holders
-            attributesGroup.Controls.Clear();
-            GurpenatorTable table = new GurpenatorTable(attributesGroup);
-            var attributeNames = new string[] { "ST", "DX", "IQ", "HT", "Thrust" };
-            foreach (string name in attributeNames)
-                table.add(new GurpenatorRow(nameToThing[name]));
+            attributesGroup.SuspendLayout();
+            {
+                attributesGroup.Controls.Clear();
+                table = new GurpenatorTable(attributesGroup);
+                GurpsCharacter character = new GurpsCharacter(nameToThing);
+                foreach (PurchasedProperty property in character.visibleAttributes)
+                    table.add(new GurpenatorRow(property));
+            }
+            attributesGroup.ResumeLayout();
+        }
+
+        private void toggleModeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            mode = mode != EditorMode.PlayMode ? EditorMode.PlayMode : EditorMode.EditMode;
+            table.Mode = mode;
         }
     }
 }
