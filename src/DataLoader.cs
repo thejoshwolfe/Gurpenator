@@ -18,6 +18,8 @@ namespace Gurpenator
         private static readonly Regex commentRegex = new Regex(@"^\s*" + commentPattern + @"\s*$");
         private static readonly Regex skillFormulaRegex = new Regex("^.+ [EAHV]$");
 
+        private static readonly HashSet<string> reservedWords = new HashSet<string> { "value", "cost" };
+
         public static Dictionary<string, GurpsProperty> readData(IEnumerable<string> paths)
         {
             var nameToThing = new Dictionary<string, GurpsProperty>();
@@ -42,7 +44,10 @@ namespace Gurpenator
             // make sure core attributes are defined
             foreach (string name in GurpsCharacter.coreAttributeNames)
                 if (!nameToThing.ContainsKey(name))
-                    throw new Exception("ERROR: missing definition of core trait \"" + name + "\"");
+                    throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
+
+            checkVariableReferences(nameToThing);
+
             // tweek some attributes specially
             nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
             nameToThing["Swing"].formattingFunction = GurpsProperty.formatAsDice;
@@ -50,6 +55,24 @@ namespace Gurpenator
             nameToThing["Basic Speed x4"].DisplayName = "Basic Speed";
             nameToThing["Basic Speed x4"].formattingFunction = delegate(int value) { return (value * 0.25).ToString(); };
             return nameToThing;
+        }
+
+        private static void checkVariableReferences(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            foreach (GurpsProperty property in nameToThing.Values)
+            {
+                EvaluationContext context = new EvaluationContext(nameToThing, property);
+                if (property is Advantage)
+                {
+                    Advantage advantage = (Advantage)property;
+                    advantage.costFormula.checkIsInt(context);
+                }
+                else if (property is AttributeFunction)
+                {
+                    AttributeFunction function = (AttributeFunction)property;
+                    function.formula.checkIsInt(context);
+                }
+            }
         }
 
         private static GurpsProperty interpretParsedThing(ParsedThing parsedThing)
@@ -66,7 +89,10 @@ namespace Gurpenator
                     else
                     {
                         Formula costFormula = FormulaParser.parseFormula(parsedThing.formula, parsedThing);
-                        return Advantage.create(parsedThing, costFormula);
+                        if (costFormula.usesLevel())
+                            return new IntAdvantage(parsedThing, costFormula);
+                        else
+                            return new BooleanAdvantage(parsedThing, costFormula);
                     }
                 case ":=":
                     {
@@ -131,6 +157,8 @@ namespace Gurpenator
                     string formula = match.Groups[4].Value.Trim();
                     string comment = match.Groups[5].Success ? match.Groups[5].Value.Trim() : null;
                     ParsedThing thing = new ParsedThing(name, subPropertyName, declarationOperator, formula, comment, path, i + 1);
+                    if (reservedWords.Contains(name))
+                        throw new Exception("ERROR: name '" + name + "' is reserved " + thing.getLocationString());
                     bool hasOpenBrace = match.Groups[6].Success;
                     if (hasOpenBrace)
                     {
@@ -318,7 +346,7 @@ namespace Gurpenator
                     Action<int> checkHasClosedLeft = delegate(int i)
                     {
                         if (i >= treeBuffer.Count)
-                            throwError("unexpected end of expression after '" + treeBuffer[i - 1].ToString() + "'");
+                            throwError("expected something after '" + treeBuffer[i - 1].ToString() + "'");
                         Formula formula = treeBuffer[i];
                         if (formula is Formula.Binary)
                             if (((Formula.Binary)formula).left == Formula.NullFormula.Instance)
@@ -400,16 +428,16 @@ namespace Gurpenator
                     case "whitespace":
                         break; // ignore
                     case "symbol":
-                        yield return new SymbolToken(match.Value);
+                        yield return new SymbolToken(parsedThing, match.Value);
                         break;
                     case "identifier":
-                        yield return new IdentifierToken(match.Value.TrimEnd());
+                        yield return new IdentifierToken(parsedThing, match.Value.TrimEnd());
                         break;
                     case "literal":
                         if (match.Value.EndsWith("%"))
-                            yield return new PercentToken(decimal.Parse(match.Value.Remove(match.Value.Length - 1)) / 100);
+                            yield return new PercentToken(parsedThing, decimal.Parse(match.Value.Remove(match.Value.Length - 1)) / 100);
                         else
-                            yield return new IntToken(int.Parse(match.Value));
+                            yield return new IntToken(parsedThing, int.Parse(match.Value));
                         break;
                     case "invalid":
                         throwError("invalid character in formula '" + match.Value + "'");
@@ -432,6 +460,11 @@ namespace Gurpenator
     }
     public abstract class Token
     {
+        public ParsedThing parseThing;
+        public Token(ParsedThing parseThing)
+        {
+            this.parseThing = parseThing;
+        }
         public virtual Formula toFormula()
         {
             throw new NotImplementedException();
@@ -440,7 +473,8 @@ namespace Gurpenator
     public class IdentifierToken : Token
     {
         public readonly string text;
-        public IdentifierToken(string text)
+        public IdentifierToken(ParsedThing parseThing, string text)
+            : base(parseThing)
         {
             this.text = text;
         }
@@ -456,7 +490,8 @@ namespace Gurpenator
     public class SymbolToken : Token
     {
         public readonly string text;
-        public SymbolToken(string text)
+        public SymbolToken(ParsedThing parseThing, string text)
+            : base(parseThing)
         {
             this.text = text;
         }
@@ -468,7 +503,8 @@ namespace Gurpenator
     public class IntToken : Token
     {
         public readonly int value;
-        public IntToken(int value)
+        public IntToken(ParsedThing parseThing, int value)
+            : base(parseThing)
         {
             this.value = value;
         }
@@ -484,7 +520,8 @@ namespace Gurpenator
     public class PercentToken : Token
     {
         public readonly decimal value;
-        public PercentToken(decimal value)
+        public PercentToken(ParsedThing parseThing, decimal value)
+            : base(parseThing)
         {
             this.value = value;
         }
