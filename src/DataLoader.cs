@@ -60,18 +60,69 @@ namespace Gurpenator
 
         private static void checkFormulas(Dictionary<string, GurpsProperty> nameToThing)
         {
+            // check names are defined; check variables are proper type; link parent skills
             foreach (GurpsProperty property in nameToThing.Values)
             {
                 CheckingContext context = new CheckingContext(nameToThing, property);
-                if (property is Advantage)
+                if (property is Advantage) { ((Advantage)property).costFormula.checkIsInt(context); }
+                else if (property is AttributeFunction) { ((AttributeFunction)property).formula.checkIsInt(context); }
+                else if (property is Skill) { ((Skill)property).formula.checkIsInt(context); }
+                else if (property is InheritedSkill)
                 {
-                    Advantage advantage = (Advantage)property;
-                    advantage.costFormula.checkIsInt(context);
+                    InheritedSkill inheritedSkill = (InheritedSkill)property;
+                    IdentifierToken parentNameToken = inheritedSkill.parentSkillToken;
+                    GurpsProperty parent;
+                    try { parent = nameToThing[parentNameToken.text]; }
+                    catch (KeyNotFoundException) { throw parentNameToken.parseThing.createError("Parent skill not defined '" + parentNameToken.text + "'"); }
+                    if (!(parent is AbstractSkill))
+                        throw parentNameToken.parseThing.createError("Parent is not a skill '" + parentNameToken.text + "'");
+                    inheritedSkill.parent = (AbstractSkill)parent;
+                }
+            }
+
+            // check for circularity
+            foreach (GurpsProperty property in nameToThing.Values)
+            {
+                if (property is InheritedSkill)
+                {
+                    var visited = new HashSet<InheritedSkill>();
+                    Action<InheritedSkill> recurse = null;
+                    recurse = delegate(InheritedSkill skill)
+                    {
+                        if (!visited.Add(skill))
+                        {
+                            string names = string.Join(", ", from s in visited select s.name + " " + s.parsedThing.getLocationString());
+                            throw new Exception("ERROR: recursive skill inheritance: " + names);
+                        }
+                        if (skill.parent is InheritedSkill)
+                            recurse((InheritedSkill)skill.parent);
+                        visited.Remove(skill);
+                    };
+                    recurse((InheritedSkill)property);
                 }
                 else if (property is AttributeFunction)
                 {
+                    // this could probably be generalized greatly
                     AttributeFunction function = (AttributeFunction)property;
-                    function.formula.checkIsInt(context);
+                    // per undocumented behavior, the Dictionary class seems to perserve insertion order
+                    var visited = new HashSet<AttributeFunction>();
+                    Action<AttributeFunction> recurse = null;
+                    recurse = delegate(AttributeFunction localFunction)
+                    {
+                        if (!visited.Add(localFunction))
+                        {
+                            string names = string.Join(", ", from f in visited select f.name + " " + f.parsedThing.getLocationString());
+                            throw new Exception("ERROR: recursive functions: " + names);
+                        }
+                        foreach (var name in localFunction.usedNames())
+                        {
+                            GurpsProperty usedProperty = nameToThing[name];
+                            if (usedProperty is AttributeFunction)
+                                recurse((AttributeFunction)usedProperty);
+                        }
+                        visited.Remove(localFunction);
+                    };
+                    recurse(function);
                 }
             }
         }
@@ -107,7 +158,7 @@ namespace Gurpenator
                         Formula formula = FormulaParser.parseFormula(formulaText, parsedThing);
                         if (!(formula is Formula.Identifier))
                             throw new Exception("ERROR: expected name of skill. got '" + formulaText + "' " + parsedThing.getLocationString());
-                        return new InheritedSkill(parsedThing, difficulty, ((Formula.Identifier)formula).token.text);
+                        return new InheritedSkill(parsedThing, difficulty, ((Formula.Identifier)formula).token);
                     }
                 case "=":
                     {
@@ -234,6 +285,11 @@ namespace Gurpenator
         public string getLocationString()
         {
             return "(" + sourcePath + ":" + lineNumber + ")";
+        }
+
+        public Exception createError(string message)
+        {
+            return new Exception("ERROR: " + message + " " + getLocationString());
         }
     }
 

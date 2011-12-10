@@ -43,7 +43,8 @@ namespace Gurpenator
         protected AbstractSkill(ParsedThing parsedThing)
             : base(parsedThing) { }
 
-        protected static int difficultyOffset(SkillDifficulty difficulty)
+        public abstract SkillDifficulty getDifficulty();
+        public static int difficultyOffset(SkillDifficulty difficulty)
         {
             switch (difficulty)
             {
@@ -54,10 +55,12 @@ namespace Gurpenator
             }
             throw null;
         }
+
+        public abstract Formula getBaseFormula();
     }
     public class Skill : AbstractSkill
     {
-        public SkillDifficulty difficulty;
+        private SkillDifficulty difficulty;
         public Formula formula;
         public Skill(ParsedThing parsedThing, SkillDifficulty difficulty, Formula formula)
             : base(parsedThing)
@@ -66,23 +69,32 @@ namespace Gurpenator
             this.formula = formula;
         }
         public override IEnumerable<string> usedNames() { return formula.usedNames(); }
-
-        public int difficultyOffset()
-        {
-            return difficultyOffset(difficulty);
-        }
+        public override SkillDifficulty getDifficulty() { return difficulty; }
+        public override Formula getBaseFormula() { return formula; }
     }
     public class InheritedSkill : AbstractSkill
     {
-        private SkillDifficulty difficultyOverride;
-        private string parentSkillName;
-        public InheritedSkill(ParsedThing parsedThing, SkillDifficulty difficultyOverride, string parentSkillName)
+        public SkillDifficulty difficultyOverride;
+        public IdentifierToken parentSkillToken;
+        public AbstractSkill parent = null;
+        public InheritedSkill(ParsedThing parsedThing, SkillDifficulty difficultyOverride, IdentifierToken parentSkillToken)
             : base(parsedThing)
         {
             this.difficultyOverride = difficultyOverride;
-            this.parentSkillName = parentSkillName;
+            this.parentSkillToken = parentSkillToken;
         }
-        public override IEnumerable<string> usedNames() { yield return parentSkillName; }
+        public override SkillDifficulty getDifficulty()
+        {
+            SkillDifficulty difficulty = difficultyOverride;
+            if (difficulty == SkillDifficulty.Unspecified)
+            {
+                // TODO: optional specialties demote difficulty
+                difficulty = parent.getDifficulty();
+            }
+            return difficulty;
+        }
+        public override Formula getBaseFormula() { return parent.getBaseFormula(); }
+        public override IEnumerable<string> usedNames() { yield return parentSkillToken.text; }
     }
     public abstract class Advantage : GurpsProperty
     {
@@ -135,22 +147,20 @@ namespace Gurpenator
                 return purchasedLevels;
             if (property is AttributeFunction)
                 return ((AttributeFunction)property).formula.evalInt(new EvaluationContext(character, this));
-            if (property is Skill)
+            if (property is AbstractSkill)
             {
-                Skill skill = (Skill)property;
+                AbstractSkill skill = (AbstractSkill)property;
                 if (purchasedLevels == 0)
                 {
                     return int.MinValue; // TODO: defaults
                 }
                 else
                 {
-                    int attribute = skill.formula.evalInt(new EvaluationContext(character, this));
-                    int difficultyOffset = skill.difficultyOffset();
+                    int attribute = skill.getBaseFormula().evalInt(new EvaluationContext(character, this));
+                    int difficultyOffset = AbstractSkill.difficultyOffset(skill.getDifficulty());
                     return attribute + difficultyOffset + purchasedLevels;
                 }
             }
-            if (property is InheritedSkill)
-                return 0; // TODO
             throw null;
         }
         public bool nonDefault { get { return purchasedLevels > 0; } }
