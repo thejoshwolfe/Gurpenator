@@ -86,9 +86,9 @@ namespace Gurpenator
             if (spendingSpinner != null)
                 spendingSpinner.Value = (decimal)purchasedProperty.PurchasedLevels;
             if (costLabel != null)
-                costLabel.Text = purchasedProperty.cost.ToString();
+                costLabel.Text = purchasedProperty.getCost().ToString();
             if (outputLabel != null)
-                outputLabel.Text = purchasedProperty.formattedValue;
+                outputLabel.Text = purchasedProperty.getFormattedValue();
         }
         public Label createHeaderLabel()
         {
@@ -119,13 +119,13 @@ namespace Gurpenator
                 return createFiller();
             costLabel = creatLabel();
             costLabel.TextAlign = ContentAlignment.MiddleRight;
-            costLabel.Text = purchasedProperty.cost.ToString();
+            costLabel.Text = purchasedProperty.getCost().ToString();
             return costLabel;
         }
         public Label createOutputLabel()
         {
             outputLabel = creatLabel();
-            outputLabel.Text = purchasedProperty.formattedValue;
+            outputLabel.Text = purchasedProperty.getFormattedValue();
             if (purchasedProperty.property.formattingFunction == GurpsProperty.formatAsDice)
                 outputLabel.TextAlign = ContentAlignment.MiddleLeft;
             else

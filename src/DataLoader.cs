@@ -146,7 +146,7 @@ namespace Gurpenator
                 string line;
                 if (isLineBlank(line = lines[i].Trim()))
                     continue;
-                Action throwParseError = delegate() { throw new Exception("ERROR: syntax problem: " + path + ":" + (i + 1)); };
+                Action throwParseError = delegate() { throw new Exception("ERROR: syntax problem (" + path + ":" + (i + 1) + ")"); };
                 Match match = null;
                 // hack for local recursion (for DRY)
                 Func<ParsedThing> parseThing = null;

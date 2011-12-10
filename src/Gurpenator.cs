@@ -30,7 +30,8 @@ namespace Gurpenator
             this.parsedThing = parsedThing;
         }
 
-        public Func<int, string> formattingFunction = delegate(int value) { return value.ToString(); };
+        public static readonly Func<int, string> toStringFormattingFunction = (value) => value == int.MinValue ? "NA" : value.ToString();
+        public Func<int, string> formattingFunction = toStringFormattingFunction;
         public virtual IEnumerable<string> usedNames() { yield break; }
     }
     public enum SkillDifficulty
@@ -41,6 +42,18 @@ namespace Gurpenator
     {
         protected AbstractSkill(ParsedThing parsedThing)
             : base(parsedThing) { }
+
+        protected static int difficultyOffset(SkillDifficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case SkillDifficulty.Easy: return -1;
+                case SkillDifficulty.Average: return -2;
+                case SkillDifficulty.Hard: return -3;
+                case SkillDifficulty.VeryHard: return -4;
+            }
+            throw null;
+        }
     }
     public class Skill : AbstractSkill
     {
@@ -52,7 +65,12 @@ namespace Gurpenator
             this.difficulty = difficulty;
             this.formula = formula;
         }
-        public override IEnumerable<string> usedNames() { foreach (var result in formula.usedNames()) yield return result; }
+        public override IEnumerable<string> usedNames() { return formula.usedNames(); }
+
+        public int difficultyOffset()
+        {
+            return difficultyOffset(difficulty);
+        }
     }
     public class InheritedSkill : AbstractSkill
     {
@@ -74,7 +92,7 @@ namespace Gurpenator
         {
             this.costFormula = costFormula;
         }
-        public override IEnumerable<string> usedNames() { foreach (var result in costFormula.usedNames()) yield return result; }
+        public override IEnumerable<string> usedNames() { return costFormula.usedNames(); }
     }
     public class IntAdvantage : Advantage
     {
@@ -83,8 +101,12 @@ namespace Gurpenator
     }
     public class BooleanAdvantage : Advantage
     {
+        public static readonly Func<int, string> intToBoolFormattingFunction = (value) => value != 0 ? "yes" : "no";
         public BooleanAdvantage(ParsedThing parsedThing, Formula costFormula)
-            : base(parsedThing, costFormula) { }
+            : base(parsedThing, costFormula)
+        {
+            formattingFunction = intToBoolFormattingFunction;
+        }
     }
     public class AttributeFunction : GurpsProperty
     {
@@ -94,7 +116,7 @@ namespace Gurpenator
         {
             this.formula = formula;
         }
-        public override IEnumerable<string> usedNames() { foreach (var result in formula.usedNames()) yield return result; }
+        public override IEnumerable<string> usedNames() { return formula.usedNames(); }
     }
 
     public class PurchasedProperty
@@ -107,40 +129,50 @@ namespace Gurpenator
             this.character = character;
         }
         public bool hasLevel { get { return !(property is BooleanAdvantage); } }
-        public int level
+        public int getLevel()
         {
-            get
+            if (property is Advantage)
+                return purchasedLevels;
+            if (property is AttributeFunction)
+                return ((AttributeFunction)property).formula.evalInt(new EvaluationContext(character, this));
+            if (property is Skill)
             {
-                if (property is IntAdvantage)
-                    return purchasedLevels;
-                if (property is AttributeFunction)
-                    return ((AttributeFunction)property).formula.evalInt(new EvaluationContext(character, this, int.MinValue));
-                if (property is AbstractSkill)
-                    return 0; // TODO
-                throw null;
+                Skill skill = (Skill)property;
+                if (purchasedLevels == 0)
+                {
+                    return int.MinValue; // TODO: defaults
+                }
+                else
+                {
+                    int attribute = skill.formula.evalInt(new EvaluationContext(character, this));
+                    int difficultyOffset = skill.difficultyOffset();
+                    return attribute + difficultyOffset + purchasedLevels;
+                }
             }
+            if (property is InheritedSkill)
+                return 0; // TODO
+            throw null;
         }
         public bool nonDefault { get { return purchasedLevels > 0; } }
-        public string formattedValue { get { return property.formattingFunction(level); } }
+        public string getFormattedValue() { return property.formattingFunction(getLevel()); }
         public bool hasCost { get { return !(property is AttributeFunction); } }
-        public int cost
+        public int getCost()
         {
-            get
+            EvaluationContext context = new EvaluationContext(character, this, purchasedLevels);
+            if (property is Advantage)
+                return ((Advantage)property).costFormula.evalInt(context);
+            if (property is AbstractSkill)
             {
-                EvaluationContext context = new EvaluationContext(character, this, purchasedLevels);
-                if (property is Advantage)
-                    return ((Advantage)property).costFormula.evalInt(context);
-                if (property is AbstractSkill)
-                {
-                    return 0; // TODO
-                }
-                if (property is AttributeFunction)
-                    return 0;
-                throw null;
+                // purchased: 0, 1, 2, 3, 4, ... +1
+                // cost:      0, 1, 2, 4, 8, ... +4
+                return purchasedLevels < 3 ? purchasedLevels : 4 * (purchasedLevels - 2);
             }
+            if (property is AttributeFunction)
+                return 0;
+            throw null;
         }
 
-        public bool hasPurchasedLevels { get { return property is IntAdvantage; } }
+        public bool hasPurchasedLevels { get { return property is IntAdvantage || property is AbstractSkill; } }
         private int purchasedLevels = 0;
         public int PurchasedLevels
         {
@@ -166,7 +198,7 @@ namespace Gurpenator
 
         public override string ToString()
         {
-            return property.name + ":" + purchasedLevels + ":" + cost + ":" + level;
+            return property.name + ":" + purchasedLevels + ":" + getCost() + ":" + getLevel();
         }
     }
 
@@ -178,6 +210,7 @@ namespace Gurpenator
             "HP", "Will", "Per", "FP",
             "Basic Lift",
             "Basic Speed x4",
+            "Basic Move",
             "Thrust", "Swing",
             "Dodge",
             "Fright Check",
@@ -209,6 +242,18 @@ namespace Gurpenator
             {
                 foreach (string attributeName in attributeNames)
                     yield return nameToPurchasedAttribute[attributeName];
+            }
+        }
+        public IEnumerable<PurchasedProperty> otherTraits
+        {
+            get
+            {
+                HashSet<string> visibleSet = new HashSet<string>(attributeNames);
+                List<string> allNames = nameToPurchasedAttribute.Keys.ToList();
+                allNames.Sort();
+                foreach (var name in allNames)
+                    if (!visibleSet.Contains(name))
+                        yield return nameToPurchasedAttribute[name];
             }
         }
 
@@ -270,7 +315,7 @@ namespace Gurpenator
         private GurpsCharacter character;
         private PurchasedProperty purchasedProperty;
         private int levelValue;
-        public EvaluationContext(GurpsCharacter character, PurchasedProperty purchasedProperty, int levelValue)
+        public EvaluationContext(GurpsCharacter character, PurchasedProperty purchasedProperty, int levelValue = int.MinValue)
         {
             this.character = character;
             this.purchasedProperty = purchasedProperty;
@@ -279,8 +324,12 @@ namespace Gurpenator
         public int evalInt(string name)
         {
             if (name == "level")
+            {
+                if (levelValue == int.MinValue)
+                    throw null; // should have been checked earlier
                 return levelValue;
-            return character.getPurchasedProperty(name).level;
+            }
+            return character.getPurchasedProperty(name).getLevel();
         }
         public bool evalBoolean(string name)
         {
