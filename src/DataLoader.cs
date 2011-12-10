@@ -29,10 +29,7 @@ namespace Gurpenator
                 foreach (ParsedThing parsedThing in parseFile(path))
                 {
                     GurpsProperty property = interpretParsedThing(parsedThing);
-                    try
-                    {
-                        nameToThing.Add(property.name, property);
-                    }
+                    try { nameToThing.Add(property.name, property); }
                     catch (ArgumentException)
                     {
                         GurpsProperty previousThing = nameToThing[property.name];
@@ -52,7 +49,7 @@ namespace Gurpenator
             // tweek some attributes specially
             nameToThing["Thrust"].formattingFunction = GurpsProperty.formatAsDice;
             nameToThing["Swing"].formattingFunction = GurpsProperty.formatAsDice;
-            // display Basic Speed in m/s rather than Basic Speed x4 in x4m/s.
+            // display Basic Speed in m/s rather than Basic Speed x4 in m/s*4.
             nameToThing["Basic Speed x4"].DisplayName = "Basic Speed";
             nameToThing["Basic Speed x4"].formattingFunction = delegate(int value) { return (value * 0.25).ToString(); };
             return nameToThing;
@@ -98,7 +95,19 @@ namespace Gurpenator
                             recurse((InheritedSkill)skill.parent);
                         visited.Remove(skill);
                     };
-                    recurse((InheritedSkill)property);
+                    InheritedSkill inheritedSkill = (InheritedSkill)property;
+                    recurse(inheritedSkill);
+                    // also check for optional specialty rulz
+                    if (inheritedSkill.category)
+                    {
+                        if (!inheritedSkill.parent.category)
+                            throw inheritedSkill.parsedThing.createError("Optional specialties cannot be categories");
+                    }
+                    else
+                    {
+                        if (inheritedSkill.parent is InheritedSkill && !((InheritedSkill)inheritedSkill.parent).parent.category)
+                            throw inheritedSkill.parsedThing.createError("Optional specialties cannot be based on optional specialties");
+                    }
                 }
                 else if (property is AttributeFunction)
                 {
@@ -129,6 +138,48 @@ namespace Gurpenator
 
         private static GurpsProperty interpretParsedThing(ParsedThing parsedThing)
         {
+            GurpsProperty property = createParsedThing(parsedThing);
+            foreach (ParsedThing subThing in parsedThing.subThings)
+            {
+                if (new string[] { "category", "default", "requires" }.Contains(subThing.name))
+                {
+                    if (subThing.subPropertyName != null)
+                        throw subThing.createError("property '" + subThing.name + "' has no subproperty '" + subThing.subPropertyName + "'");
+                    Formula formula = FormulaParser.parseFormula(subThing.formula, subThing);
+                    switch (subThing.name)
+                    {
+                        case "category":
+                            if (!(formula is Formula.BooleanLiteral))
+                                throw subThing.createError("categry can only be 'true' or 'false'");
+                            if (!(property is AbstractSkill))
+                                throw subThing.createError("only skills can be categories");
+                            ((AbstractSkill)property).category = ((Formula.BooleanLiteral)formula).value.value;
+                            continue;
+                        case "default":
+                        case "requires":
+                            // TODO
+                            continue;
+                    }
+                }
+                switch (subThing.declarationOperator)
+                {
+                    case "=":
+                    case "+=":
+                    case "-=":
+                        // TODO
+                        continue;
+                    case ":":
+                        // TODO
+                        continue;
+                }
+                throw null;
+            }
+            return property;
+        }
+        private static GurpsProperty createParsedThing(ParsedThing parsedThing)
+        {
+            if (parsedThing.subPropertyName != null)
+                throw parsedThing.createError("No '.' allowed in names");
             switch (parsedThing.declarationOperator)
             {
                 case ":":
@@ -472,7 +523,8 @@ namespace Gurpenator
         private static Regex tokenizerRegex = new Regex(
             @"(?<whitespace>\s+)|" +
             @"(?<symbol>\(|\)|\*|\+|,|-|/|<=|<|>=|>|IF|THEN|ELSE|AND|OR)|" +
-            @"(?<literal>\d+%?)|" +
+            @"(?<numberLiteral>\d+%?)|" +
+            @"(?<booleanLiteral>true|false)|" +
             @"(?<identifier>[A-Za-z_](?:[A-Za-z0-9_ ]*(?:\([A-Za-z0-9_ ]*\))?)*)|" +
             @"(?<invalid>.)" // catch anything else as invalid
         );
@@ -490,11 +542,14 @@ namespace Gurpenator
                     case "identifier":
                         yield return new IdentifierToken(parsedThing, match.Value.TrimEnd());
                         break;
-                    case "literal":
+                    case "numberLiteral":
                         if (match.Value.EndsWith("%"))
                             yield return new PercentToken(parsedThing, decimal.Parse(match.Value.Remove(match.Value.Length - 1)) / 100);
                         else
                             yield return new IntToken(parsedThing, int.Parse(match.Value));
+                        break;
+                    case "booleanLiteral":
+                        yield return new BooleanToken(parsedThing, match.Value == "true");
                         break;
                     case "invalid":
                         throwError("invalid character in formula '" + match.Value + "'");
@@ -522,10 +577,7 @@ namespace Gurpenator
         {
             this.parseThing = parseThing;
         }
-        public virtual Formula toFormula()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual Formula toFormula() { throw new NotImplementedException(); }
     }
     public class IdentifierToken : Token
     {
@@ -535,14 +587,8 @@ namespace Gurpenator
         {
             this.text = text;
         }
-        public override string ToString()
-        {
-            return text;
-        }
-        public override Formula toFormula()
-        {
-            return new Formula.Identifier(this);
-        }
+        public override string ToString() { return text; }
+        public override Formula toFormula() { return new Formula.Identifier(this); }
     }
     public class SymbolToken : Token
     {
@@ -552,10 +598,7 @@ namespace Gurpenator
         {
             this.text = text;
         }
-        public override string ToString()
-        {
-            return text;
-        }
+        public override string ToString() { return text; }
     }
     public class IntToken : Token
     {
@@ -565,14 +608,8 @@ namespace Gurpenator
         {
             this.value = value;
         }
-        public override string ToString()
-        {
-            return value.ToString();
-        }
-        public override Formula toFormula()
-        {
-            return new Formula.IntLiteral(this);
-        }
+        public override string ToString() { return value.ToString(); }
+        public override Formula toFormula() { return new Formula.IntLiteral(this); }
     }
     public class PercentToken : Token
     {
@@ -582,13 +619,18 @@ namespace Gurpenator
         {
             this.value = value;
         }
-        public override string ToString()
+        public override string ToString() { return ((int)(value * 100)).ToString() + "%"; }
+        public override Formula toFormula() { return new Formula.PercentLiteral(this); }
+    }
+    public class BooleanToken : Token
+    {
+        public readonly bool value;
+        public BooleanToken(ParsedThing parseThing, bool value)
+            : base(parseThing)
         {
-            return ((int)(value * 100)).ToString() + "%";
+            this.value = value;
         }
-        public override Formula toFormula()
-        {
-            return new Formula.PercentLiteral(this);
-        }
+        public override string ToString() { return value ? "true" : "false"; }
+        public override Formula toFormula() { return new Formula.BooleanLiteral(this); }
     }
 }

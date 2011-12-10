@@ -40,6 +40,8 @@ namespace Gurpenator
     }
     public abstract class AbstractSkill : GurpsProperty
     {
+        public bool category = false;
+
         protected AbstractSkill(ParsedThing parsedThing)
             : base(parsedThing) { }
 
@@ -88,8 +90,12 @@ namespace Gurpenator
             SkillDifficulty difficulty = difficultyOverride;
             if (difficulty == SkillDifficulty.Unspecified)
             {
-                // TODO: optional specialties demote difficulty
                 difficulty = parent.getDifficulty();
+                if (!parent.category)
+                {
+                    // demote difficulty for optional specialties
+                    difficulty = (SkillDifficulty)((int)difficulty - 1);
+                }
             }
             return difficulty;
         }
@@ -182,7 +188,17 @@ namespace Gurpenator
             throw null;
         }
 
-        public bool hasPurchasedLevels { get { return property is IntAdvantage || property is AbstractSkill; } }
+        public bool hasPurchasedLevels
+        {
+            get
+            {
+                if (property is IntAdvantage)
+                    return true;
+                if (property is AbstractSkill)
+                    return !((AbstractSkill)property).category;
+                return false;
+            }
+        }
         private int purchasedLevels = 0;
         public int PurchasedLevels
         {
@@ -399,6 +415,18 @@ namespace Gurpenator
             public override string ToString() { return value.ToString(); }
             public override void checkIsInt(CheckingContext context) { CheckingContext.throwNotAnIntError(value); }
             public override void checkIsBoolean(CheckingContext context) { CheckingContext.throwNotABooleanError(value); }
+        }
+        public class BooleanLiteral : Leaf
+        {
+            public BooleanToken value;
+            public BooleanLiteral(BooleanToken value)
+            {
+                this.value = value;
+            }
+            public override string ToString() { return value.ToString(); }
+            public override void checkIsInt(CheckingContext context) { CheckingContext.throwNotAnIntError(value); }
+            public override bool evalBoolean(EvaluationContext context) { return value.value; }
+            public override void checkIsBoolean(CheckingContext context) { }
         }
         public class UnaryPrefix : Formula
         {
