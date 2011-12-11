@@ -42,15 +42,15 @@
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toggleModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.otherGroup = new System.Windows.Forms.GroupBox();
+            this.panel1 = new System.Windows.Forms.Panel();
             placeHolder1 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
             this.attributesGroup.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
-            this.panel1.SuspendLayout();
             this.otherGroup.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // placeHolder1
@@ -61,6 +61,15 @@
             placeHolder1.Size = new System.Drawing.Size(95, 13);
             placeHolder1.TabIndex = 1;
             placeHolder1.Text = "[place holder]--------";
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new System.Drawing.Point(6, 16);
+            label2.Name = "label2";
+            label2.Size = new System.Drawing.Size(95, 13);
+            label2.TabIndex = 1;
+            label2.Text = "[place holder]--------";
             // 
             // label1
             // 
@@ -126,6 +135,7 @@
             this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
             this.openToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.openToolStripMenuItem.Text = "&Open...";
+            this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
@@ -139,6 +149,7 @@
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
             this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.saveAsToolStripMenuItem.Text = "Save &As...";
+            this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // toolsToolStripMenuItem
             // 
@@ -175,19 +186,6 @@
             this.mainTableLayoutPanel.Size = new System.Drawing.Size(555, 477);
             this.mainTableLayoutPanel.TabIndex = 14;
             // 
-            // panel1
-            // 
-            this.panel1.AutoSize = true;
-            this.panel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.mainTableLayoutPanel.SetColumnSpan(this.panel1, 2);
-            this.panel1.Controls.Add(this.nameTextBox);
-            this.panel1.Controls.Add(this.label1);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(549, 26);
-            this.panel1.TabIndex = 0;
-            // 
             // otherGroup
             // 
             this.otherGroup.AutoSize = true;
@@ -200,14 +198,18 @@
             this.otherGroup.TabStop = false;
             this.otherGroup.Text = "other";
             // 
-            // label2
+            // panel1
             // 
-            label2.AutoSize = true;
-            label2.Location = new System.Drawing.Point(6, 16);
-            label2.Name = "label2";
-            label2.Size = new System.Drawing.Size(95, 13);
-            label2.TabIndex = 1;
-            label2.Text = "[place holder]--------";
+            this.panel1.AutoSize = true;
+            this.panel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.mainTableLayoutPanel.SetColumnSpan(this.panel1, 2);
+            this.panel1.Controls.Add(this.nameTextBox);
+            this.panel1.Controls.Add(this.label1);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(3, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(549, 26);
+            this.panel1.TabIndex = 0;
             // 
             // MainWindow
             // 
@@ -225,10 +227,10 @@
             this.menuStrip1.PerformLayout();
             this.mainTableLayoutPanel.ResumeLayout(false);
             this.mainTableLayoutPanel.PerformLayout();
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
             this.otherGroup.ResumeLayout(false);
             this.otherGroup.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 

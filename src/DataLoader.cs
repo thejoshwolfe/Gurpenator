@@ -282,8 +282,8 @@ namespace Gurpenator
         }
         private static IEnumerable<ParsedThing> parseFile(string path)
         {
-            List<string> lines = readLines(path);
-            for (int i = 0; i < lines.Count; i++)
+            string[] lines = File.ReadAllLines(path);
+            for (int i = 0; i < lines.Length; i++)
             {
                 string line;
                 if (isLineBlank(line = lines[i].Trim()))
@@ -307,7 +307,7 @@ namespace Gurpenator
                     {
                         i++;
                         int firstLineIndex = i;
-                        for (; i < lines.Count; i++)
+                        for (; i < lines.Length; i++)
                         {
                             if (isLineBlank(line = lines[i].Trim()))
                                 continue;
@@ -340,17 +340,168 @@ namespace Gurpenator
             }
         }
 
-        public static List<string> readLines(string path)
+        private static readonly Dictionary<char, string> escapeSequences = new Dictionary<char, string> {
+            {'\\', @"\\"},
+            {'"', "\\\""},
+            {'\r', "\\r"},
+            {'\n', "\\n"},
+            {'\t', "\\t"},
+        };
+        private static readonly Dictionary<char, char> reverseEscapeSequences = new Dictionary<char, char>();
+        static DataLoader()
         {
-            using (StreamReader reader = File.OpenText(path))
+            foreach (var item in escapeSequences)
+                reverseEscapeSequences.Add(item.Value[1], item.Key);
+        }
+        public static string jsonToString(object outterJsonObject)
+        {
+            StringBuilder result = new StringBuilder();
+            Action<object, int> recurse = null;
+            recurse = delegate(object jsonObject, int indentCount)
             {
-                List<string> result = new List<string>();
-                while (!reader.EndOfStream)
+                Action appendIndent = delegate()
                 {
-                    result.Add(reader.ReadLine());
+                    for (int i = 0; i < indentCount; i++)
+                        result.Append("    ");
+                };
+                if (jsonObject is Dictionary<string, object>)
+                {
+                    var dict = (Dictionary<string, object>)jsonObject;
+                    result.AppendLine("{");
+                    indentCount++;
+                    foreach (var item in dict)
+                    {
+                        string key = item.Key;
+                        appendIndent();
+                        recurse(key, indentCount);
+                        result.Append(": ");
+                        recurse(item.Value, indentCount);
+                        result.AppendLine(",");
+                    }
+                    indentCount--;
+                    appendIndent();
+                    result.Append("}");
                 }
-                return result;
-            }
+                else if (jsonObject is List<object>)
+                {
+                    var list = (List<object>)jsonObject;
+                    result.AppendLine("[");
+                    indentCount++;
+                    foreach (object item in list)
+                    {
+                        appendIndent();
+                        recurse(item, indentCount);
+                        result.AppendLine(",");
+                    }
+                    indentCount--;
+                    appendIndent();
+                    result.Append("]");
+                }
+                else if (jsonObject is string)
+                {
+                    var str = (string)jsonObject;
+                    result.Append('"');
+                    foreach (char c in str)
+                    {
+                        string escapeSequence;
+                        if (escapeSequences.TryGetValue(c, out escapeSequence))
+                            result.Append(escapeSequence);
+                        else
+                            result.Append(c);
+                    }
+                    result.Append('"');
+                }
+                else if (jsonObject is int)
+                {
+                    result.Append((int)jsonObject);
+                }
+                else
+                    throw null;
+            };
+            recurse(outterJsonObject, 0);
+            result.AppendLine();
+            return result.ToString();
+        }
+        public static object stringToJson(string serialization)
+        {
+            int index = 0;
+            Func<int> skipWhitespace = delegate
+            {
+                for (; index < serialization.Length; index++)
+                    if (!char.IsWhiteSpace(serialization[index]))
+                        break;
+                return index;
+            };
+            Func<object> recurse = null;
+            recurse = delegate()
+            {
+                switch (serialization[skipWhitespace()])
+                {
+                    case '{':
+                        {
+                            index++;
+                            var dict = new Dictionary<string, object>();
+                            while (serialization[skipWhitespace()] != '}')
+                            {
+                                var key = (string)recurse();
+                                if (serialization[skipWhitespace()] != ':')
+                                    throw null;
+                                index++;
+                                var value = recurse();
+                                dict.Add(key, value);
+                                if (serialization[skipWhitespace()] == ',')
+                                    index++;
+                            }
+                            index++;
+                            return dict;
+                        }
+                    case '[':
+                        {
+                            index++;
+                            var list = new List<object>();
+                            while (serialization[skipWhitespace()] != ']')
+                            {
+                                var item = recurse();
+                                list.Add(item);
+                                if (serialization[skipWhitespace()] == ',')
+                                    index++;
+                            }
+                            index++;
+                            return list;
+                        }
+                    case '"':
+                        {
+                            index++;
+                            var result = new StringBuilder();
+                            while (serialization[index] != '"')
+                            {
+                                char c = serialization[index];
+                                if (c != '\\')
+                                    result.Append(c);
+                                else
+                                {
+                                    index++;
+                                    result.Append(reverseEscapeSequences[serialization[index]]);
+                                }
+                                index++;
+                            }
+                            index++;
+                            return result.ToString();
+                        }
+                    default:
+                        {
+                            int startIndex = index;
+                            for (; index < serialization.Length; index++)
+                                if (!(char.IsNumber(serialization[index]) || serialization[index] == '-'))
+                                    break;
+                            return int.Parse(serialization.Substring(startIndex, index - startIndex));
+                        }
+                }
+            };
+            var outterResult = recurse();
+            if (skipWhitespace() != serialization.Length)
+                throw null;
+            return outterResult;
         }
     }
     public class ParsedThing

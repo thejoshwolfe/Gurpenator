@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Gurpenator
 {
@@ -291,6 +292,23 @@ namespace Gurpenator
         {
             return property.name + ":" + purchasedLevels + ":" + getCost() + ":" + getFormattedValue();
         }
+
+        public object toJson()
+        {
+            return new Dictionary<string, object> {
+                {"trait", property.name},
+                {"purchased", purchasedLevels},
+            };
+        }
+
+        public static PurchasedProperty fromJson(object jsonObject, GurpsCharacter character)
+        {
+            var dict = (Dictionary<string, object>)jsonObject;
+            var traitName = (string)dict["trait"];
+            var result = new PurchasedProperty(character.getPurchasedProperty(traitName).property, character);
+            result.purchasedLevels = (int)dict["purchased"];
+            return result;
+        }
     }
 
     public class GurpsCharacter
@@ -353,10 +371,28 @@ namespace Gurpenator
                         yield return nameToPurchasedAttribute[name];
             }
         }
+        public PurchasedProperty getPurchasedProperty(string name) { return nameToPurchasedAttribute[name]; }
 
-        public PurchasedProperty getPurchasedProperty(string name)
+        public object toJson()
         {
-            return nameToPurchasedAttribute[name];
+            var purchasedThings = new List<object>();
+            foreach (PurchasedProperty purchasedProperty in nameToPurchasedAttribute.Values)
+                purchasedThings.Add(purchasedProperty.toJson());
+            return new Dictionary<string, object> {
+                {"purchases", purchasedThings},
+            };
+        }
+        public static GurpsCharacter fromJson(object jsonObject, Dictionary<string, GurpsProperty> nameToThing)
+        {
+            GurpsCharacter character = new GurpsCharacter(nameToThing);
+            var dict = (Dictionary<string, object>)jsonObject;
+            var purchasesThings = (List<object>)dict["purchases"];
+            foreach (object purchase in purchasesThings)
+            {
+                PurchasedProperty purchasedProperty = PurchasedProperty.fromJson(purchase, character);
+                character.getPurchasedProperty(purchasedProperty.property.name).PurchasedLevels = purchasedProperty.PurchasedLevels;
+            }
+            return character;
         }
     }
 
