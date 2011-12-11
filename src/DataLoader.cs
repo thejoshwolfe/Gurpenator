@@ -43,7 +43,6 @@ namespace Gurpenator
                 if (!nameToThing.ContainsKey(name))
                     throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
 
-            // check for undefined varaibles and type errors
             checkFormulas(nameToThing);
 
             // tweek some attributes specially
@@ -75,6 +74,27 @@ namespace Gurpenator
                         throw parentNameToken.parseThing.createError("Parent is not a skill '" + parentNameToken.text + "'");
                     inheritedSkill.parent = (AbstractSkill)parent;
                 }
+                foreach (Effect effect in property.effects)
+                {
+                    GurpsProperty affectedProperty;
+                    try { affectedProperty = nameToThing[effect.traitName]; }
+                    catch (KeyNotFoundException) { throw effect.parsedThing.createError("Name not found '" + effect.traitName + "'"); }
+                    affectedProperty.effectedBy.Add(effect);
+                    if (effect is TraitModifier)
+                    {
+                        if (affectedProperty is BooleanAdvantage) // TODO: use hasLevels or whatever
+                            throw effect.parsedThing.createError("Cannot modify the level of a trait with no level");
+                        effect.formula.checkIsInt(context);
+                    }
+                    else if (effect is CostModifier)
+                    {
+                        if (affectedProperty is AttributeFunction) // TODO: use hasCost or whatever
+                            throw effect.parsedThing.createError("Cannot modify the cost of a trait with no cost");
+                        effect.formula.checkIsPercent(context);
+                    }
+                    else
+                        throw null;
+                }
             }
 
             // check for circularity
@@ -97,7 +117,7 @@ namespace Gurpenator
                     };
                     InheritedSkill inheritedSkill = (InheritedSkill)property;
                     recurse(inheritedSkill);
-                    // also check for optional specialty rulz
+                    // also check optional specialty rulz
                     if (inheritedSkill.category)
                     {
                         if (!inheritedSkill.parent.category)
@@ -160,19 +180,39 @@ namespace Gurpenator
                             // TODO
                             continue;
                     }
+                    throw null;
                 }
                 switch (subThing.declarationOperator)
                 {
-                    case "=":
                     case "+=":
                     case "-=":
-                        // TODO
-                        continue;
+                        {
+                            string traitName = subThing.name;
+                            Formula formula = FormulaParser.parseFormula(subThing.formula, subThing);
+                            if (subThing.subPropertyName == null)
+                            {
+                                if (subThing.declarationOperator == "-=")
+                                {
+                                    // negate the formula
+                                    formula = new Formula.UnaryPrefix(new SymbolToken(subThing, "-"), formula);
+                                }
+                                property.effects.Add(new TraitModifier(property, traitName, formula, subThing));
+                            }
+                            else if (subThing.subPropertyName == "cost")
+                                property.effects.Add(new CostModifier(property, traitName, formula, subThing));
+                            else
+                                throw subThing.createError("can't modify the '" + subThing.subPropertyName + "' of another trait");
+                            if (subThing.subThings.Count > 0)
+                                throw subThing.subThings[0].createError("Subitems not allowed here");
+                            continue;
+                        }
                     case ":":
+                        if (subThing.subPropertyName != null)
+                            throw subThing.createError("No '.' allowed in names");
                         // TODO
                         continue;
                 }
-                throw null;
+                throw subThing.createError("illegal operator '" + subThing.declarationOperator + "' for property");
             }
             return property;
         }
