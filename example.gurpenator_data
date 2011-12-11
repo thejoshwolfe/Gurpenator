@@ -172,7 +172,14 @@ Force Sword := Swords {
 Knife := Swords E {
     default += Force Sword - 3
 }
+
 # Any bonuses or penalties to the category will apply to the member as well.
+# Combat Reflexes will enhance Fast Draw (Force Sword) skill below.
+Fast Draw: DX E {
+    category = true
+}
+Fast Draw (Force Sword) := Fast Draw
+# Note that the above skill is not related at all to the Force Sword skill
 
 
 # An optional specialty is a skill that inherits from an ordinary skill rather than a category.
