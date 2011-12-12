@@ -62,6 +62,9 @@ namespace Gurpenator
                 refreshControls();
             }
         }
+
+        public void suspendLayout() { table.SuspendLayout(); }
+        public void resumeLayout() { table.ResumeLayout(); }
     }
     public class GurpenatorRow
     {

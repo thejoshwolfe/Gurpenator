@@ -31,25 +31,25 @@ namespace Gurpenator
         {
             this.character = character;
             // delete place holders
-            attributesGroup.SuspendLayout();
             {
                 attributesGroup.Controls.Clear();
                 var table = new GurpenatorTable(attributesGroup);
+                table.suspendLayout();
                 foreach (PurchasedProperty property in character.visibleAttributes)
                     table.add(new GurpenatorRow(property));
+                table.resumeLayout();
                 tables.Add(table);
             }
-            attributesGroup.ResumeLayout();
 
-            otherGroup.SuspendLayout();
             {
                 otherGroup.Controls.Clear();
                 var table = new GurpenatorTable(otherGroup);
+                table.suspendLayout();
                 foreach (PurchasedProperty property in character.otherTraits)
                     table.add(new GurpenatorRow(property));
+                table.resumeLayout();
                 tables.Add(table);
             }
-            otherGroup.ResumeLayout();
         }
 
         private void toggleModeToolStripMenuItem_Click(object sender, EventArgs e)
