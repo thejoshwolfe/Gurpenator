@@ -336,6 +336,8 @@ namespace Gurpenator
         public static readonly HashSet<string> coreAttributeNames = new HashSet<string>(attributeNames.Concat(hiddenAttributeNames));
 
         private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
+        private List<string> secondListOfTraits = new List<string>();
+
         public GurpsCharacter(Dictionary<string, GurpsProperty> nameToThing)
         {
             foreach (GurpsProperty property in nameToThing.Values)
@@ -354,46 +356,52 @@ namespace Gurpenator
                 }
             }
         }
-        public IEnumerable<PurchasedProperty> visibleAttributes
+        public IEnumerable<PurchasedProperty> getVisibleAttributes()
         {
-            get
-            {
-                foreach (string attributeName in attributeNames)
-                    yield return nameToPurchasedAttribute[attributeName];
-            }
+            foreach (string attributeName in attributeNames)
+                yield return nameToPurchasedAttribute[attributeName];
         }
-        public IEnumerable<PurchasedProperty> otherTraits
+        public IEnumerable<PurchasedProperty> getSecondPanelOfTraits()
         {
-            get
-            {
-                HashSet<string> visibleSet = new HashSet<string>(attributeNames);
-                List<string> allNames = nameToPurchasedAttribute.Keys.ToList();
-                allNames.Sort();
-                foreach (var name in allNames)
-                    if (!visibleSet.Contains(name))
-                        yield return nameToPurchasedAttribute[name];
-            }
+            foreach (var name in secondListOfTraits)
+                yield return nameToPurchasedAttribute[name];
+        }
+        public void addToSecondList(string name)
+        {
+            if (secondListOfTraits.Contains(name))
+                return;
+            secondListOfTraits.Add(name);
         }
         public PurchasedProperty getPurchasedProperty(string name) { return nameToPurchasedAttribute[name]; }
 
         public object toJson()
         {
-            var purchasedThings = new List<object>();
-            foreach (PurchasedProperty purchasedProperty in nameToPurchasedAttribute.Values)
-                purchasedThings.Add(purchasedProperty.toJson());
+            var attributes = new List<object>();
+            foreach (string name in attributeNames)
+                attributes.Add(getPurchasedProperty(name).toJson());
+            var secondList = new List<object>();
+            foreach (string name in secondListOfTraits)
+                secondList.Add(getPurchasedProperty(name).toJson());
             return new Dictionary<string, object> {
-                {"purchases", purchasedThings},
+                { "attributes", attributes },
+                { "secondList", secondList },
             };
         }
         public static GurpsCharacter fromJson(object jsonObject, Dictionary<string, GurpsProperty> nameToThing)
         {
             GurpsCharacter character = new GurpsCharacter(nameToThing);
             var dict = (Dictionary<string, object>)jsonObject;
-            var purchasesThings = (List<object>)dict["purchases"];
-            foreach (object purchase in purchasesThings)
+            var attributes = (List<object>)dict["attributes"];
+            var secondList = (List<object>)dict["secondList"];
+            foreach (object purchase in attributes.Concat(secondList))
             {
                 PurchasedProperty purchasedProperty = PurchasedProperty.fromJson(purchase, character);
                 character.getPurchasedProperty(purchasedProperty.property.name).PurchasedLevels = purchasedProperty.PurchasedLevels;
+            }
+            foreach (object thing in secondList)
+            {
+                PurchasedProperty purchasedProperty = PurchasedProperty.fromJson(thing, character);
+                character.secondListOfTraits.Add(purchasedProperty.property.name);
             }
             return character;
         }

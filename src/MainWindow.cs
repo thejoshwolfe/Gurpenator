@@ -22,6 +22,7 @@ namespace Gurpenator
         {
             // default human
             var character = new GurpsCharacter(nameToThing);
+            character.addToSecondList("Human");
             character.getPurchasedProperty("Human").PurchasedLevels = 1;
             setCharacter(character);
             filePath = null;
@@ -35,7 +36,7 @@ namespace Gurpenator
                 attributesGroup.Controls.Clear();
                 var table = new GurpenatorTable(attributesGroup);
                 table.suspendLayout();
-                foreach (PurchasedProperty property in character.visibleAttributes)
+                foreach (PurchasedProperty property in character.getVisibleAttributes())
                     table.add(new GurpenatorRow(property));
                 table.resumeLayout();
                 tables.Add(table);
@@ -45,7 +46,7 @@ namespace Gurpenator
                 otherGroup.Controls.Clear();
                 var table = new GurpenatorTable(otherGroup);
                 table.suspendLayout();
-                foreach (PurchasedProperty property in character.otherTraits)
+                foreach (PurchasedProperty property in character.getSecondPanelOfTraits())
                     table.add(new GurpenatorRow(property));
                 table.resumeLayout();
                 tables.Add(table);
