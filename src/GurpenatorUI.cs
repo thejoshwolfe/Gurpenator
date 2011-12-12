@@ -42,7 +42,7 @@ namespace Gurpenator
             table.Controls.Add(row.createHeaderLabel());
             if (table.ColumnCount == 4)
             {
-                table.Controls.Add(row.createSpendingSpinner());
+                table.Controls.Add(row.createSpendingControl());
                 table.Controls.Add(row.createCostLabel());
             }
             table.Controls.Add(row.createOutputLabel());
@@ -67,6 +67,7 @@ namespace Gurpenator
     {
         protected PurchasedProperty purchasedProperty;
         private NumericUpDown spendingSpinner;
+        private CheckBox spendingCheckbox;
         private Label costLabel;
         private Label outputLabel;
         public GurpenatorRow(PurchasedProperty purchasedProperty)
@@ -77,6 +78,7 @@ namespace Gurpenator
         public void dispose()
         {
             spendingSpinner = null;
+            spendingCheckbox = null;
             costLabel = null;
             outputLabel = null;
             purchasedProperty.changed -= purchasedProperty_changed;
@@ -85,6 +87,8 @@ namespace Gurpenator
         {
             if (spendingSpinner != null)
                 spendingSpinner.Value = (decimal)purchasedProperty.PurchasedLevels;
+            if (spendingCheckbox != null)
+                spendingCheckbox.Checked = purchasedProperty.PurchasedLevels != 0;
             if (costLabel != null)
                 costLabel.Text = purchasedProperty.getCost().ToString();
             if (outputLabel != null)
@@ -97,21 +101,35 @@ namespace Gurpenator
             header.Text = purchasedProperty.property.DisplayName;
             return header;
         }
-        public virtual Control createSpendingSpinner()
+        public virtual Control createSpendingControl()
         {
-            if (!purchasedProperty.hasPurchasedLevels)
-                return createFiller();
-            spendingSpinner = new NumericUpDown();
-            spendingSpinner.Minimum = -9999;
-            spendingSpinner.Maximum = 9999;
-            spendingSpinner.AutoSize = true;
-            spendingSpinner.Dock = DockStyle.Fill;
-            spendingSpinner.Value = purchasedProperty.PurchasedLevels;
-            spendingSpinner.ValueChanged += delegate(object sender, EventArgs e)
+            if (purchasedProperty.hasPurchasedLevels)
             {
-                purchasedProperty.PurchasedLevels = (int)spendingSpinner.Value;
-            };
-            return spendingSpinner;
+                spendingSpinner = new NumericUpDown();
+                spendingSpinner.Minimum = -9999;
+                spendingSpinner.Maximum = 9999;
+                spendingSpinner.AutoSize = true;
+                spendingSpinner.Dock = DockStyle.Fill;
+                spendingSpinner.Value = purchasedProperty.PurchasedLevels;
+                spendingSpinner.ValueChanged += delegate(object sender, EventArgs e)
+                {
+                    purchasedProperty.PurchasedLevels = (int)spendingSpinner.Value;
+                };
+                return spendingSpinner;
+            }
+            if (purchasedProperty.isBooleanPurchasable)
+            {
+                spendingCheckbox = new CheckBox();
+                spendingCheckbox.AutoSize = true;
+                spendingCheckbox.Dock = DockStyle.Fill;
+                spendingCheckbox.Checked = purchasedProperty.PurchasedLevels != 0;
+                spendingCheckbox.CheckedChanged += delegate(object sender, EventArgs e)
+                {
+                    purchasedProperty.PurchasedLevels = spendingCheckbox.Checked ? 1 : 0;
+                };
+                return spendingCheckbox;
+            }
+            return createFiller();
         }
         public Control createCostLabel()
         {

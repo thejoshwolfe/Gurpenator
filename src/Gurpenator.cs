@@ -178,6 +178,8 @@ namespace Gurpenator
         public int getLevel()
         {
             int level = getUnmodifiedLevel();
+            if (level == int.MinValue)
+                return level;
             foreach (TraitModifier effect in from x in property.effectedBy where x is TraitModifier select x)
             {
                 PurchasedProperty otherPurchasedProperty = character.getPurchasedProperty(effect.owner.name);
@@ -210,7 +212,7 @@ namespace Gurpenator
             }
             throw null;
         }
-        public bool nonDefault { get { return purchasedLevels > 0; } }
+        public bool nonDefault { get { return GurpsCharacter.coreAttributeNames.Contains(property.name) || purchasedLevels > 0; } }
         public string getFormattedValue() { return property.formattingFunction(getLevel()); }
         public bool hasCost { get { return !(property is AttributeFunction); } }
         public int getCost()
@@ -254,6 +256,7 @@ namespace Gurpenator
             throw null;
         }
 
+        public bool isBooleanPurchasable { get { return property is BooleanAdvantage; } }
         public bool hasPurchasedLevels
         {
             get
@@ -330,7 +333,7 @@ namespace Gurpenator
             "Basic Lift ST",
             "Damage ST",
         };
-        public static IEnumerable<string> coreAttributeNames { get { return attributeNames.Concat(hiddenAttributeNames); } }
+        public static readonly HashSet<string> coreAttributeNames = new HashSet<string>(attributeNames.Concat(hiddenAttributeNames));
 
         private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
         public GurpsCharacter(Dictionary<string, GurpsProperty> nameToThing)

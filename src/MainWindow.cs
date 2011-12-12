@@ -15,7 +15,16 @@ namespace Gurpenator
         {
             InitializeComponent();
             nameToThing = DataLoader.readData(new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
-            setCharacter(new GurpsCharacter(nameToThing));
+            newCharacter();
+        }
+
+        private void newCharacter()
+        {
+            // default human
+            var character = new GurpsCharacter(nameToThing);
+            character.getPurchasedProperty("Human").PurchasedLevels = 1;
+            setCharacter(character);
+            filePath = null;
         }
 
         private void setCharacter(GurpsCharacter character)
@@ -52,17 +61,42 @@ namespace Gurpenator
 
         private const string extension = ".gurpenator_character";
         private const string dialogFilter = "Gurpenator Character (*" + extension + ")|*" + extension;
-        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        private string filePath = null;
+        private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string serialization = DataLoader.jsonToString(character.toJson());
-            string path = showFileDialog(new SaveFileDialog());
-            File.WriteAllText(path, serialization);
+            newCharacter();
         }
-
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string path = showFileDialog(new OpenFileDialog());
+            if (path == null)
+                return;
+            filePath = path;
             setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), nameToThing));
+        }
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filePath == null)
+                saveAs();
+            else
+                save();
+        }
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            saveAs();
+        }
+        private void saveAs()
+        {
+            string path = showFileDialog(new SaveFileDialog());
+            if (path == null)
+                return;
+            filePath = path;
+            save();
+        }
+        private void save()
+        {
+            string serialization = DataLoader.jsonToString(character.toJson());
+            File.WriteAllText(filePath, serialization);
         }
         private string showFileDialog(FileDialog dialog)
         {
