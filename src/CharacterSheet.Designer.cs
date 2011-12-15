@@ -1,6 +1,6 @@
 ﻿namespace Gurpenator
 {
-    partial class MainWindow
+    partial class CharacterSheet
     {
         /// <summary>
         /// Required designer variable.
@@ -213,7 +213,7 @@
             this.panel1.Size = new System.Drawing.Size(549, 26);
             this.panel1.TabIndex = 0;
             // 
-            // MainWindow
+            // CharacterSheet
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -221,7 +221,7 @@
             this.Controls.Add(this.mainTableLayoutPanel);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.Name = "MainWindow";
+            this.Name = "CharacterSheet";
             this.Text = "Gurpenator";
             this.attributesGroup.ResumeLayout(false);
             this.attributesGroup.PerformLayout();

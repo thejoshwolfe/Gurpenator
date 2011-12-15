@@ -13,11 +13,13 @@ namespace Gurpenator
     }
     public class GurpenatorTable
     {
+        public readonly CharacterSheet characterSheet;
         private TableLayoutPanel table;
         private List<GurpenatorRow> rows = new List<GurpenatorRow>();
         private EditorMode mode = EditorMode.EditMode;
-        public GurpenatorTable(Control parent)
+        public GurpenatorTable(Control parent, CharacterSheet characterSheet)
         {
+            this.characterSheet = characterSheet;
             table = new TableLayoutPanel();
             table.Dock = DockStyle.Fill;
             table.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -47,10 +49,10 @@ namespace Gurpenator
             }
             table.Controls.Add(row.createOutputLabel());
         }
-        public void add(GurpenatorRow row)
+        public void addRange(IEnumerable<GurpenatorRow> rows)
         {
-            rows.Add(row);
-            addRowControls(row);
+            this.rows.AddRange(rows);
+            refreshControls();
         }
         public EditorMode Mode
         {
@@ -62,20 +64,21 @@ namespace Gurpenator
                 refreshControls();
             }
         }
-
         public void suspendLayout() { table.SuspendLayout(); }
         public void resumeLayout() { table.ResumeLayout(); }
     }
     public class GurpenatorRow
     {
-        protected PurchasedProperty purchasedProperty;
+        private readonly PurchasedProperty purchasedProperty;
+        private readonly GurpenatorTable table;
         private NumericUpDown spendingSpinner;
         private CheckBox spendingCheckbox;
         private Label costLabel;
         private Label outputLabel;
-        public GurpenatorRow(PurchasedProperty purchasedProperty)
+        public GurpenatorRow(PurchasedProperty purchasedProperty, GurpenatorTable table)
         {
             this.purchasedProperty = purchasedProperty;
+            this.table = table;
             purchasedProperty.changed += purchasedProperty_changed;
         }
         public void dispose()
@@ -86,7 +89,7 @@ namespace Gurpenator
             outputLabel = null;
             purchasedProperty.changed -= purchasedProperty_changed;
         }
-        protected void purchasedProperty_changed()
+        private void purchasedProperty_changed()
         {
             if (spendingSpinner != null)
                 spendingSpinner.Value = (decimal)purchasedProperty.PurchasedLevels;
@@ -104,7 +107,17 @@ namespace Gurpenator
             header.Text = purchasedProperty.property.DisplayName;
             return header;
         }
-        public virtual Control createSpendingControl()
+        private CharacterSheet characterSheet { get { return table.characterSheet; } }
+        private EventHandler createEventHandler(Action action)
+        {
+            return delegate(object sender, EventArgs e)
+            {
+                characterSheet.suspendUi();
+                action();
+                characterSheet.resumeUi();
+            };
+        }
+        public Control createSpendingControl()
         {
             if (purchasedProperty.hasPurchasedLevels)
             {
@@ -114,10 +127,7 @@ namespace Gurpenator
                 spendingSpinner.AutoSize = true;
                 spendingSpinner.Dock = DockStyle.Fill;
                 spendingSpinner.Value = purchasedProperty.PurchasedLevels;
-                spendingSpinner.ValueChanged += delegate(object sender, EventArgs e)
-                {
-                    purchasedProperty.PurchasedLevels = (int)spendingSpinner.Value;
-                };
+                spendingSpinner.ValueChanged += createEventHandler(delegate() { purchasedProperty.PurchasedLevels = (int)spendingSpinner.Value; });
                 return spendingSpinner;
             }
             if (purchasedProperty.isBooleanPurchasable)
@@ -126,10 +136,7 @@ namespace Gurpenator
                 spendingCheckbox.AutoSize = true;
                 spendingCheckbox.Dock = DockStyle.Fill;
                 spendingCheckbox.Checked = purchasedProperty.PurchasedLevels != 0;
-                spendingCheckbox.CheckedChanged += delegate(object sender, EventArgs e)
-                {
-                    purchasedProperty.PurchasedLevels = spendingCheckbox.Checked ? 1 : 0;
-                };
+                spendingCheckbox.CheckedChanged += createEventHandler(delegate() { purchasedProperty.PurchasedLevels = spendingCheckbox.Checked ? 1 : 0; });
                 return spendingCheckbox;
             }
             return createFiller();

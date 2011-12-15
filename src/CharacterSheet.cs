@@ -5,13 +5,13 @@ using System.IO;
 
 namespace Gurpenator
 {
-    public partial class MainWindow : Form
+    public partial class CharacterSheet : Form
     {
         private EditorMode mode = EditorMode.EditMode;
         private List<GurpenatorTable> tables = new List<GurpenatorTable>();
         private GurpsCharacter character;
         private Dictionary<string, GurpsProperty> nameToThing;
-        public MainWindow()
+        public CharacterSheet()
         {
             InitializeComponent();
             nameToThing = DataLoader.readData(new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
@@ -31,26 +31,18 @@ namespace Gurpenator
         private void setCharacter(GurpsCharacter character)
         {
             this.character = character;
-            // delete place holders
-            {
-                attributesGroup.Controls.Clear();
-                var table = new GurpenatorTable(attributesGroup);
-                table.suspendLayout();
-                foreach (PurchasedProperty property in character.getVisibleAttributes())
-                    table.add(new GurpenatorRow(property));
-                table.resumeLayout();
-                tables.Add(table);
-            }
-
-            {
-                otherGroup.Controls.Clear();
-                var table = new GurpenatorTable(otherGroup);
-                table.suspendLayout();
-                foreach (PurchasedProperty property in character.getSecondPanelOfTraits())
-                    table.add(new GurpenatorRow(property));
-                table.resumeLayout();
-                tables.Add(table);
-            }
+            createTable(attributesGroup, character.getVisibleAttributes());
+            createTable(otherGroup, character.getSecondPanelOfTraits());
+        }
+        private void createTable(Control parent, IEnumerable<PurchasedProperty> properties)
+        {
+            parent.Controls.Clear();
+            var table = new GurpenatorTable(parent, this);
+            var rows = new List<GurpenatorRow>();
+            foreach (PurchasedProperty property in properties)
+                rows.Add(new GurpenatorRow(property, table));
+            table.addRange(rows);
+            tables.Add(table);
         }
 
         private void toggleModeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -106,6 +98,17 @@ namespace Gurpenator
             if (dialog.ShowDialog(this) == System.Windows.Forms.DialogResult.Cancel)
                 return null;
             return dialog.FileName;
+        }
+
+        public void suspendUi()
+        {
+            foreach (var table in tables)
+                table.suspendLayout();
+        }
+        public void resumeUi()
+        {
+            foreach (var table in tables)
+                table.resumeLayout();
         }
     }
 }

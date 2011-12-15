@@ -67,11 +67,11 @@
     <Compile Include="src\DataLoader.cs" />
     <Compile Include="src\Gurpenator.cs" />
     <Compile Include="src\GurpenatorUI.cs" />
-    <Compile Include="src\MainWindow.cs">
+    <Compile Include="src\CharacterSheet.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="src\MainWindow.Designer.cs">
-      <DependentUpon>MainWindow.cs</DependentUpon>
+    <Compile Include="src\CharacterSheet.Designer.cs">
+      <DependentUpon>CharacterSheet.cs</DependentUpon>
     </Compile>
     <Compile Include="src\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -84,8 +84,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="src\MainWindow.resx">
-      <DependentUpon>MainWindow.cs</DependentUpon>
+    <EmbeddedResource Include="src\CharacterSheet.resx">
+      <DependentUpon>CharacterSheet.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
