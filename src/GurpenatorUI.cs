@@ -16,6 +16,7 @@ namespace Gurpenator
         public readonly CharacterSheet characterSheet;
         private TableLayoutPanel table;
         private List<GurpenatorRow> rows = new List<GurpenatorRow>();
+        private TextBox newItemTextBox;
         private EditorMode mode = EditorMode.EditMode;
         public GurpenatorTable(Control parent, CharacterSheet characterSheet)
         {
@@ -30,14 +31,16 @@ namespace Gurpenator
         }
         private void refreshControls()
         {
-            table.SuspendLayout();
+            using (new LayoutSuspender(table))
             {
                 table.Controls.Clear();
+                newItemTextBox = null;
                 table.ColumnCount = mode == EditorMode.PlayMode ? 2 : 4;
                 foreach (GurpenatorRow row in rows)
                     addRowControls(row);
+                if (mode == EditorMode.EditMode)
+                    addLastRow();
             }
-            table.ResumeLayout();
         }
         private void addRowControls(GurpenatorRow row)
         {
@@ -49,8 +52,81 @@ namespace Gurpenator
             }
             table.Controls.Add(row.createOutputLabel());
         }
-        public void addRange(IEnumerable<GurpenatorRow> rows)
+        private TableLayoutPanel searchSuggestionBox = null;
+        private void suggest(List<GurpsProperty> suggestions)
         {
+            if (suggestions.Count == 0)
+            {
+                clearSearchSuggestions();
+                return;
+            }
+            if (searchSuggestionBox == null)
+            {
+                searchSuggestionBox = new TableLayoutPanel();
+                Point location = characterSheet.PointToClient(newItemTextBox.Parent.PointToScreen(newItemTextBox.Location));
+                location.Offset(0, newItemTextBox.Height);
+                searchSuggestionBox.Location = location;
+                searchSuggestionBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                searchSuggestionBox.AutoSize = true;
+                searchSuggestionBox.BackColor = Color.White;
+
+                characterSheet.Controls.Add(searchSuggestionBox);
+                searchSuggestionBox.BringToFront();
+            }
+
+            using (new LayoutSuspender(searchSuggestionBox))
+            {
+                searchSuggestionBox.Controls.Clear();
+                foreach (var suggestion in suggestions)
+                {
+                    Label label = new Label();
+                    label.Text = suggestion.name;
+                    label.AutoSize = true;
+                    label.Dock = DockStyle.Fill;
+                    label.MouseEnter += (EventHandler)((_, __) => { label.BackColor = Color.PaleTurquoise; });
+                    label.MouseLeave += (EventHandler)((_, __) => { label.BackColor = Color.Transparent; });
+                    var localSelection = suggestion;
+                    label.MouseDown += (MouseEventHandler)((_, __) => { addNewItem(localSelection); });
+                    searchSuggestionBox.Controls.Add(label);
+                }
+            }
+        }
+
+        private void addNewItem(GurpsProperty property)
+        {
+            using (new LayoutSuspender(table))
+            {
+                table.Controls.Remove(newItemTextBox);
+                // TODO: addToSecondPanel is retarded
+                addRowControls(new GurpenatorRow(characterSheet.Character.addToSecondPanel(property.name), this));
+                addLastRow();
+            }
+        }
+        private void clearSearchSuggestions()
+        {
+            if (searchSuggestionBox == null)
+                return;
+            characterSheet.Controls.Remove(searchSuggestionBox);
+            searchSuggestionBox = null;
+        }
+        private void addLastRow()
+        {
+            newItemTextBox = new TextBox();
+            newItemTextBox.Dock = DockStyle.Fill;
+            newItemTextBox.TextChanged += delegate(object sender, EventArgs e)
+            {
+                if (newItemTextBox.Text.Trim() != "")
+                    suggest(characterSheet.database.search(newItemTextBox.Text));
+                else
+                    clearSearchSuggestions();
+            };
+            newItemTextBox.LostFocus += (EventHandler)((_, __) => { clearSearchSuggestions(); });
+            table.Controls.Add(newItemTextBox);
+        }
+        public void setRows(IEnumerable<GurpenatorRow> rows)
+        {
+            if (this.rows.Count != 0)
+                throw null;
             this.rows.AddRange(rows);
             refreshControls();
         }
@@ -172,6 +248,20 @@ namespace Gurpenator
             var result = new Label();
             result.Size = new Size();
             return result;
+        }
+    }
+
+    public class LayoutSuspender : IDisposable
+    {
+        private readonly Control control;
+        public LayoutSuspender(Control control)
+        {
+            this.control = control;
+            control.SuspendLayout();
+        }
+        public void Dispose()
+        {
+            control.ResumeLayout();
         }
     }
 }

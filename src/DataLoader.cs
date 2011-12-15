@@ -20,9 +20,9 @@ namespace Gurpenator
 
         public static readonly HashSet<string> reservedWords = new HashSet<string> { "level", "cost", "none" };
 
-        public static Dictionary<string, GurpsProperty> readData(IEnumerable<string> paths)
+        public static void readData(GurpsDatabase database, IEnumerable<string> paths)
         {
-            var nameToThing = new Dictionary<string, GurpsProperty>();
+            var nameToThing = database.nameToThing;
             // parse and check for duplicate names
             foreach (string path in paths)
             {
@@ -51,7 +51,6 @@ namespace Gurpenator
             // display Basic Speed in m/s rather than Basic Speed x4 in m/s*4.
             nameToThing["Basic Speed x4"].DisplayName = "Basic Speed";
             nameToThing["Basic Speed x4"].formattingFunction = delegate(int value) { return (value * 0.25).ToString(); };
-            return nameToThing;
         }
 
         private static void checkFormulas(Dictionary<string, GurpsProperty> nameToThing)

@@ -10,18 +10,20 @@ namespace Gurpenator
         private EditorMode mode = EditorMode.EditMode;
         private List<GurpenatorTable> tables = new List<GurpenatorTable>();
         private GurpsCharacter character;
-        private Dictionary<string, GurpsProperty> nameToThing;
+        public GurpsCharacter Character { get { return character; } }
+        public readonly GurpsDatabase database;
         public CharacterSheet()
         {
             InitializeComponent();
-            nameToThing = DataLoader.readData(new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
+            database = new GurpsDatabase();
+            DataLoader.readData(database, new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
             newCharacter();
         }
 
         private void newCharacter()
         {
             // default human
-            var character = new GurpsCharacter(nameToThing);
+            var character = new GurpsCharacter(database);
             character.addToSecondList("Human");
             character.getPurchasedProperty("Human").PurchasedLevels = 1;
             setCharacter(character);
@@ -41,7 +43,7 @@ namespace Gurpenator
             var rows = new List<GurpenatorRow>();
             foreach (PurchasedProperty property in properties)
                 rows.Add(new GurpenatorRow(property, table));
-            table.addRange(rows);
+            table.setRows(rows);
             tables.Add(table);
         }
 
@@ -65,7 +67,7 @@ namespace Gurpenator
             if (path == null)
                 return;
             filePath = path;
-            setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), nameToThing));
+            setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), database));
         }
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {

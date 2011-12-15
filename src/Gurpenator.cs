@@ -5,6 +5,25 @@ using System.Text;
 
 namespace Gurpenator
 {
+    public class GurpsDatabase
+    {
+        public Dictionary<string, GurpsProperty> nameToThing = new Dictionary<string, GurpsProperty>();
+
+        public List<GurpsProperty> search(string query)
+        {
+            return new List<GurpsProperty>(internalSearch(query).OrderBy((property) => property.name));
+        }
+        private IEnumerable<GurpsProperty> internalSearch(string query)
+        {
+            var words = query.ToLower().Split(' ');
+            foreach (GurpsProperty property in nameToThing.Values)
+            {
+                var nameToLower = property.name.ToLower();
+                if (words.All((word) => nameToLower.Contains(word)))
+                    yield return property;
+            }
+        }
+    }
     public abstract class GurpsProperty
     {
         public static string formatAsDice(int value)
@@ -338,9 +357,9 @@ namespace Gurpenator
         private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
         private List<string> secondListOfTraits = new List<string>();
 
-        public GurpsCharacter(Dictionary<string, GurpsProperty> nameToThing)
+        public GurpsCharacter(GurpsDatabase database)
         {
-            foreach (GurpsProperty property in nameToThing.Values)
+            foreach (GurpsProperty property in database.nameToThing.Values)
                 nameToPurchasedAttribute[property.name] = new PurchasedProperty(property, this);
             foreach (PurchasedProperty purchasedProperty in nameToPurchasedAttribute.Values)
             {
@@ -387,9 +406,9 @@ namespace Gurpenator
                 { "secondList", secondList },
             };
         }
-        public static GurpsCharacter fromJson(object jsonObject, Dictionary<string, GurpsProperty> nameToThing)
+        public static GurpsCharacter fromJson(object jsonObject, GurpsDatabase database)
         {
-            GurpsCharacter character = new GurpsCharacter(nameToThing);
+            GurpsCharacter character = new GurpsCharacter(database);
             var dict = (Dictionary<string, object>)jsonObject;
             var attributes = (List<object>)dict["attributes"];
             var secondList = (List<object>)dict["secondList"];
@@ -404,6 +423,13 @@ namespace Gurpenator
                 character.secondListOfTraits.Add(purchasedProperty.property.name);
             }
             return character;
+        }
+
+        public PurchasedProperty addToSecondPanel(string name)
+        {
+            secondListOfTraits.Add(name);
+            // TODO: this is retarted
+            return getPurchasedProperty(name);
         }
     }
 
