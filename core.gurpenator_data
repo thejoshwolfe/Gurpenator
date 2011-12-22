@@ -15,6 +15,7 @@ IQ: 20 * level {
 }
 HT: 10 * level {
     FP += level
+    Basic Speed x4 += level
 }
 
 HP: 2 * level
