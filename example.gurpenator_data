@@ -9,7 +9,7 @@ Sealed: 15
 
 # Further details of the advantage such as the effect on attributes
 # are specified in "{}" on multiple lines like this:
-Enhanced Dodge: 15 {
+Enhanced & Dodge: 15 {
     Dodge += 1
 }
 

@@ -10,7 +10,7 @@ namespace Gurpenator
     static class DataLoader
     {
         // regex parsing? better than using a praser generator.
-        private const string nameBeginningCharacters = @"A-Za-z_ \(\)!";
+        private const string nameBeginningCharacters = @"A-Za-z_ &\(\)!";
         private const string nameMiddleCharacters = "0-9" + nameBeginningCharacters;
         private const string namePattern = "[" + nameBeginningCharacters + "][" + nameMiddleCharacters + "]*";
         private const string commentPattern = "\"(.*?)\"";
@@ -715,7 +715,7 @@ namespace Gurpenator
             @"(?<symbol>\(|\)|\*|\+|,|-|/|<=|<|>=|>|IF|THEN|ELSE|AND|OR)|" +
             @"(?<numberLiteral>\d+%?)|" +
             @"(?<booleanLiteral>true|false)|" +
-            @"(?<identifier>[A-Za-z_](?:[A-Za-z0-9_ ]*(?:\([A-Za-z0-9_ ]*\))?)*)|" +
+            @"(?<identifier>[A-Za-z_](?:[A-Za-z0-9_ &]*(?:\([A-Za-z0-9_ &]*\))?)*)|" +
             @"(?<invalid>.)" // catch anything else as invalid
         );
         private IEnumerable<Token> tokenize(string text)
