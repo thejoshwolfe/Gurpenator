@@ -15,7 +15,10 @@ namespace Gurpenator
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new CharacterSheet());
+            var database = new GurpsDatabase();
+            var sources = new List<string> { "core.gurpenator_data", "example.gurpenator_data" };
+            DataLoader.readData(database, sources);
+            Application.Run(new CharacterSheet(database));
         }
     }
 }

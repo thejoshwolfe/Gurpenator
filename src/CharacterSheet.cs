@@ -12,11 +12,10 @@ namespace Gurpenator
         private GurpsCharacter character;
         public GurpsCharacter Character { get { return character; } }
         public readonly GurpsDatabase database;
-        public CharacterSheet()
+        public CharacterSheet(GurpsDatabase database)
         {
             InitializeComponent();
-            database = new GurpsDatabase();
-            DataLoader.readData(database, new List<string> { "../../example.gurpenator_data", "../../core.gurpenator_data" });
+            this.database = database;
             newCharacter();
         }
 
