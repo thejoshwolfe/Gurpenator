@@ -302,33 +302,32 @@ namespace Gurpenator
                     if (reservedWords.Contains(name))
                         throw new Exception("ERROR: name '" + name + "' is reserved " + thing.getLocationString());
                     bool hasOpenBrace = match.Groups[6].Success;
-                    if (hasOpenBrace)
+                    if (!hasOpenBrace)
+                        return thing;
+                    i++;
+                    int firstLineIndex = i;
+                    for (; i < lines.Length; i++)
                     {
-                        i++;
-                        int firstLineIndex = i;
-                        for (; i < lines.Length; i++)
+                        if (isLineBlank(line = lines[i].Trim()))
+                            continue;
+                        if (line == "}")
+                            return thing;
+                        if (i == firstLineIndex && (match = commentRegex.Match(line)).Success)
                         {
-                            if (isLineBlank(line = lines[i].Trim()))
-                                continue;
-                            if (line == "}")
-                                break;
-                            if (i == firstLineIndex && (match = commentRegex.Match(line)).Success)
-                            {
-                                // the first line can be the comment
-                                if (thing.comment != null)
-                                    throwParseError(); // two comments?
-                                thing.comment = match.Groups[1].Value;
-                                continue;
-                            }
-                            if ((match = thingStartLineRegex.Match(line)).Success)
-                            {
-                                thing.subThings.Add(parseThing());
-                                continue;
-                            }
-                            throwParseError();
+                            // the first line can be the comment
+                            if (thing.comment != null)
+                                throwParseError(); // two comments?
+                            thing.comment = match.Groups[1].Value;
+                            continue;
                         }
+                        if ((match = thingStartLineRegex.Match(line)).Success)
+                        {
+                            thing.subThings.Add(parseThing());
+                            continue;
+                        }
+                        throwParseError();
                     }
-                    return thing;
+                    throw thing.createError("syntax problem. '{' missing '}'");
                 };
                 if ((match = thingStartLineRegex.Match(line)).Success)
                 {
