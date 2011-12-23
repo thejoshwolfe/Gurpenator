@@ -1,7 +1,7 @@
 
 # These core attributes must be defined
 
-TL = 6
+TL = 3
 
 ST: 10 * level {
     HP += level

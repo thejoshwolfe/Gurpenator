@@ -122,7 +122,7 @@ namespace Gurpenator
             return difficulty;
         }
         public override Formula getBaseFormula() { return parent.getBaseFormula(); }
-        public override IEnumerable<string> usedNames() { yield return parentSkillToken.text; }
+        public override IEnumerable<string> usedNames() { return parent.usedNames(); }
     }
     public abstract class Advantage : GurpsProperty
     {
