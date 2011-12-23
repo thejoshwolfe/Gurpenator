@@ -344,8 +344,6 @@ namespace Gurpenator
             "Basic Move",
             "Thrust", "Swing",
             "Dodge",
-            "Active Weapon Skill", "Parry",
-            "Active Shield Skill", "Block",
             "Fright Check",
         };
         private static readonly string[] hiddenAttributeNames = {
@@ -417,7 +415,11 @@ namespace Gurpenator
         {
             var attributes = new List<object>();
             foreach (string name in attributeNames)
-                attributes.Add(getPurchasedProperty(name).toJson());
+            {
+                PurchasedProperty thing = getPurchasedProperty(name);
+                if (thing.hasCost)
+                    attributes.Add(thing.toJson());
+            }
             var secondList = new List<object>();
             foreach (string name in secondListOfTraits)
                 secondList.Add(getPurchasedProperty(name).toJson());

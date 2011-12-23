@@ -20,7 +20,6 @@ namespace Gurpenator
                 newCharacter();
             else
                 load(characterPath);
-            setTitle();
         }
 
         private void newCharacter()
@@ -33,6 +32,7 @@ namespace Gurpenator
             filePath = null;
             savedName = null;
             Dirty = false;
+            setTitle();
             Preferences.Instance.RecentCharacter = filePath;
         }
 
@@ -43,14 +43,12 @@ namespace Gurpenator
             this.character = character;
             character.changed += setDirty;
             nameTextBox.Text = character.Name;
-            createTable(attributesGroup, character.getVisibleAttributes());
-            createTable(otherGroup, character.getSecondPanelOfTraits());
+            initTable(new GurpenatorTable(attributesGroup, this, false, null), character.getVisibleAttributes());
+            initTable(new GurpenatorTable(otherGroup, this, true, typeof(Advantage)), character.getSecondPanelOfTraits());
             Dirty = false;
         }
-        private void createTable(Control parent, IEnumerable<PurchasedProperty> properties)
+        private void initTable(GurpenatorTable table, IEnumerable<PurchasedProperty> properties)
         {
-            parent.Controls.Clear();
-            var table = new GurpenatorTable(parent, this);
             var rows = new List<GurpenatorRow>();
             foreach (PurchasedProperty property in properties)
                 rows.Add(new GurpenatorRow(property, table));
@@ -93,6 +91,7 @@ namespace Gurpenator
             Preferences.Instance.RecentCharacter = path;
             savedName = character.Name;
             Dirty = false;
+            setTitle();
         }
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -163,10 +162,14 @@ namespace Gurpenator
 
         private void setTitle()
         {
+            string displayName = savedName;
+            if (displayName == null || displayName == "")
+                displayName = "[No Name]";
+            displayName += " - Gurpenator";
             if (dirty)
-                this.Text = "*" + savedName;
+                this.Text = "*" + displayName;
             else
-                this.Text = savedName;
+                this.Text = displayName;
         }
         private void setDirty()
         {

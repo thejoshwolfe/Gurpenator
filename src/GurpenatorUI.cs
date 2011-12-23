@@ -16,15 +16,20 @@ namespace Gurpenator
         public readonly CharacterSheet characterSheet;
         private TableLayoutPanel table;
         private List<GurpenatorRow> rows = new List<GurpenatorRow>();
+        private bool allowAddRemoveRows;
+        private Type typeFilter;
         private TextBox newItemTextBox;
         private EditorMode mode = EditorMode.EditMode;
-        public GurpenatorTable(Control parent, CharacterSheet characterSheet)
+        public GurpenatorTable(Control parent, CharacterSheet characterSheet, bool allowAddRemoveRows, Type typeFilter)
         {
             this.characterSheet = characterSheet;
+            this.allowAddRemoveRows = allowAddRemoveRows;
+            this.typeFilter = typeFilter;
             table = new TableLayoutPanel();
             table.Dock = DockStyle.Fill;
             table.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             table.AutoSize = true;
+            parent.Controls.Clear();
             parent.Controls.Add(table);
 
             refreshControls();
@@ -38,7 +43,7 @@ namespace Gurpenator
                 table.ColumnCount = mode == EditorMode.PlayMode ? 2 : 4;
                 foreach (GurpenatorRow row in rows)
                     addRowControls(row);
-                if (mode == EditorMode.EditMode)
+                if (allowAddRemoveRows && mode == EditorMode.EditMode)
                     addLastRow();
             }
         }
