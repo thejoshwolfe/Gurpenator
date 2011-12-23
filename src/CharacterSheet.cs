@@ -12,11 +12,14 @@ namespace Gurpenator
         private GurpsCharacter character;
         public GurpsCharacter Character { get { return character; } }
         public readonly GurpsDatabase database;
-        public CharacterSheet(GurpsDatabase database)
+        public CharacterSheet(GurpsDatabase database, string characterPath)
         {
             InitializeComponent();
             this.database = database;
-            newCharacter();
+            if (characterPath == null)
+                newCharacter();
+            else
+                load(characterPath);
         }
 
         private void newCharacter()
@@ -27,6 +30,7 @@ namespace Gurpenator
             character.getPurchasedProperty("Human").PurchasedLevels = 1;
             setCharacter(character);
             filePath = null;
+            Preferences.Instance.RecentCharacter = filePath;
         }
 
         private void setCharacter(GurpsCharacter character)
@@ -65,8 +69,19 @@ namespace Gurpenator
             string path = showFileDialog(new OpenFileDialog());
             if (path == null)
                 return;
+            load(path);
+        }
+        private void load(string path)
+        {
             filePath = path;
-            setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), database));
+            try { setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), database)); }
+            catch (IOException e)
+            {
+                MessageBox.Show(this, e.Message, "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                newCharacter();
+                return;
+            }
+            Preferences.Instance.RecentCharacter = path;
         }
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -91,6 +106,7 @@ namespace Gurpenator
         {
             string serialization = DataLoader.jsonToString(character.toJson());
             File.WriteAllText(filePath, serialization);
+            Preferences.Instance.RecentCharacter = filePath;
         }
         private string showFileDialog(FileDialog dialog)
         {
