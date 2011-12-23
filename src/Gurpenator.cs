@@ -357,12 +357,28 @@ namespace Gurpenator
         private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
         private List<string> secondListOfTraits = new List<string>();
 
+        public event Action changed;
+
+        private string name = "";
+        public string Name
+        {
+            get { return name; }
+            set
+            {
+                if (name == value)
+                    return;
+                name = value;
+                raiseChanged();
+            }
+        }
+
         public GurpsCharacter(GurpsDatabase database)
         {
             foreach (GurpsProperty property in database.nameToThing.Values)
                 nameToPurchasedAttribute[property.name] = new PurchasedProperty(property, this);
             foreach (PurchasedProperty purchasedProperty in nameToPurchasedAttribute.Values)
             {
+                purchasedProperty.changed += raiseChanged;
                 foreach (string name in purchasedProperty.property.usedNames())
                 {
                     if (DataLoader.reservedWords.Contains(name))
@@ -374,6 +390,10 @@ namespace Gurpenator
                     nameToPurchasedAttribute[effect.owner.name].changed += purchasedProperty.handleChange;
                 }
             }
+        }
+        private void raiseChanged()
+        {
+            if (changed != null) changed();
         }
         public IEnumerable<PurchasedProperty> getVisibleAttributes()
         {
@@ -402,6 +422,7 @@ namespace Gurpenator
             foreach (string name in secondListOfTraits)
                 secondList.Add(getPurchasedProperty(name).toJson());
             return new Dictionary<string, object> {
+                { "name", Name } ,
                 { "attributes", attributes },
                 { "secondList", secondList },
             };
@@ -410,6 +431,7 @@ namespace Gurpenator
         {
             GurpsCharacter character = new GurpsCharacter(database);
             var dict = (Dictionary<string, object>)jsonObject;
+            character.name = (string)dict["name"];
             var attributes = (List<object>)dict["attributes"];
             var secondList = (List<object>)dict["secondList"];
             foreach (object purchase in attributes.Concat(secondList))
@@ -428,6 +450,7 @@ namespace Gurpenator
         public PurchasedProperty addToSecondPanel(string name)
         {
             secondListOfTraits.Add(name);
+            raiseChanged();
             // TODO: this is retarted
             return getPurchasedProperty(name);
         }

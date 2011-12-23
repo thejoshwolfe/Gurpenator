@@ -86,7 +86,7 @@
             this.nameTextBox.Name = "nameTextBox";
             this.nameTextBox.Size = new System.Drawing.Size(167, 20);
             this.nameTextBox.TabIndex = 1;
-            this.nameTextBox.Text = "Slartybartfast";
+            this.nameTextBox.TextChanged += new System.EventHandler(this.nameTextBox_TextChanged);
             // 
             // attributesGroup
             // 
@@ -223,6 +223,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "CharacterSheet";
             this.Text = "Gurpenator";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CharacterSheet_FormClosing);
             this.attributesGroup.ResumeLayout(false);
             this.attributesGroup.PerformLayout();
             this.menuStrip1.ResumeLayout(false);
