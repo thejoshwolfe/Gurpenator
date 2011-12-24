@@ -223,12 +223,12 @@ namespace Gurpenator
         private void addRowControls(GurpenatorRow row)
         {
             table.Controls.Add(row.createHeaderLabel());
+            table.Controls.Add(row.createOutputLabel());
             if (table.ColumnCount == 4)
             {
                 table.Controls.Add(row.createSpendingControl());
                 table.Controls.Add(row.createCostLabel());
             }
-            table.Controls.Add(row.createOutputLabel());
         }
         private TableLayoutPanel searchSuggestionBox = null;
         private void suggest(List<GurpsProperty> suggestions)
@@ -297,7 +297,7 @@ namespace Gurpenator
             newItemTextBox.TextChanged += delegate(object sender, EventArgs e)
             {
                 if (newItemTextBox.Text.Trim() != "")
-                    suggest(characterSheet.database.search(newItemTextBox.Text));
+                    suggest(characterSheet.database.search(newItemTextBox.Text, layout.filter));
                 else
                     clearSearchSuggestions();
             };
@@ -355,6 +355,7 @@ namespace Gurpenator
             Label header = createLabel();
             header.TextAlign = ContentAlignment.MiddleLeft;
             header.Text = purchasedProperty.property.DisplayName.Replace("&", "&&");
+            header.Font = new Font(header.Font, FontStyle.Bold);
             if (purchasedProperty.property is AbstractSkill)
             {
                 // we probably want to do something more formal than this

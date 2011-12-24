@@ -10,19 +10,39 @@ namespace Gurpenator
     {
         public Dictionary<string, GurpsProperty> nameToThing = new Dictionary<string, GurpsProperty>();
 
-        public List<GurpsProperty> search(string query)
+        public List<GurpsProperty> search(string query, TraitTypeFilter filter)
         {
-            return new List<GurpsProperty>(internalSearch(query).OrderBy((property) => property.DisplayName));
+            return new List<GurpsProperty>(internalSearch(query, filter).OrderBy((property) => property.DisplayName));
         }
-        private IEnumerable<GurpsProperty> internalSearch(string query)
+        private IEnumerable<GurpsProperty> internalSearch(string query, TraitTypeFilter filter)
         {
             var words = query.ToLower().Split(' ');
             foreach (GurpsProperty property in nameToThing.Values)
             {
+                if (!filterPasses(filter, property))
+                    continue;
                 var nameToLower = property.DisplayName.ToLower();
                 if (words.All((word) => nameToLower.Contains(word)))
                     yield return property;
             }
+        }
+        private static bool filterPasses(TraitTypeFilter filter, GurpsProperty property)
+        {
+            switch (filter)
+            {
+                case TraitTypeFilter.Locked: return true;
+                case TraitTypeFilter.Skills:
+                    return property is AbstractSkill && !((AbstractSkill)property).category;
+                case TraitTypeFilter.Advantages:
+                    return property is Advantage && isAdvantageNonNegative((Advantage)property);
+                case TraitTypeFilter.Disadvantages:
+                    return property is Advantage && !isAdvantageNonNegative((Advantage)property);
+            }
+            throw null;
+        }
+        private static bool isAdvantageNonNegative(Advantage advantage)
+        {
+            return advantage.costFormula.evalInt(new EvaluationContext(null, null, 1)) >= 0;
         }
     }
     public abstract class GurpsProperty
