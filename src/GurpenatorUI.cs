@@ -111,7 +111,7 @@ namespace Gurpenator
     {
         public abstract Control RootControl { get; }
         public abstract IEnumerable<GurpenatorTable> getTables();
-        protected static Control maybeContainInGroupBox(string title, TableLayoutPanel panel)
+        protected Control maybeContainInGroupBox(string title, TableLayoutPanel panel, CharacterSheet characterSheet)
         {
             if (title == null)
                 return panel;
@@ -119,8 +119,15 @@ namespace Gurpenator
             groupBox.Dock = DockStyle.Fill;
             groupBox.AutoSize = true;
             groupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            groupBox.Text = title;
+            Action updateText = delegate()
+            {
+                int cost = getTables().Sum((table) => table.layout.names.Sum((name) => characterSheet.Character.getPurchasedProperty(name).getCost()));
+                groupBox.Text = title + " (" + cost + ")";
+            };
+            updateText();
+            characterSheet.Character.changed += updateText;
             groupBox.Controls.Add(panel);
+
             return groupBox;
         }
     }
@@ -129,6 +136,7 @@ namespace Gurpenator
         TableLayoutPanel panel;
         public override Control RootControl { get { return panel; } }
         TextBox nameTextBox;
+        Label pointsTotalLabel;
         CharacterSheet characterSheet;
         public BasicInfoUiThing(CharacterSheet characterSheet)
         {
@@ -137,15 +145,32 @@ namespace Gurpenator
             panel.Dock = DockStyle.Fill;
             panel.AutoSize = true;
             panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            panel.ColumnCount = 2;
+            panel.ColumnCount = 4;
+
             Label label = GurpenatorRow.createLabel();
             label.Text = "Name:";
             panel.Controls.Add(label);
+
             nameTextBox = new TextBox();
             nameTextBox.Width = 167;
             nameTextBox.Text = characterSheet.Character.Name;
             nameTextBox.TextChanged += nameTextBox_TextChanged;
             panel.Controls.Add(nameTextBox);
+
+            Label pointsTotalLabelLabel = GurpenatorRow.createLabel();
+            pointsTotalLabelLabel.Text = "Total:";
+            panel.Controls.Add(pointsTotalLabelLabel);
+
+            pointsTotalLabel = GurpenatorRow.createLabel();
+            panel.Controls.Add(pointsTotalLabel);
+
+            character_changed();
+            characterSheet.Character.changed += character_changed;
+        }
+
+        private void character_changed()
+        {
+            pointsTotalLabel.Text =  characterSheet.Character.getAllPurchases().Sum((property) => property.getCost()).ToString();
         }
         private void nameTextBox_TextChanged(object sender, EventArgs e)
         {
@@ -170,7 +195,7 @@ namespace Gurpenator
             panel.GrowStyle = orientation == Orientation.Vertical ? TableLayoutPanelGrowStyle.AddRows : TableLayoutPanelGrowStyle.AddColumns;
             foreach (GurpenatorUiElement element in members)
                 panel.Controls.Add(element.RootControl);
-            rootControl = maybeContainInGroupBox(title, panel);
+            rootControl = maybeContainInGroupBox(title, panel, characterSheet);
         }
         public override IEnumerable<GurpenatorTable> getTables()
         {
@@ -182,7 +207,7 @@ namespace Gurpenator
     public class GurpenatorTable : GurpenatorUiElement
     {
         public readonly CharacterSheet characterSheet;
-        private readonly TraitList layout;
+        public readonly TraitList layout;
         private Control rootControl;
         public override Control RootControl { get { return rootControl; } }
         private TableLayoutPanel table;
@@ -198,7 +223,7 @@ namespace Gurpenator
             table.Dock = DockStyle.Fill;
             table.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             table.AutoSize = true;
-            rootControl = maybeContainInGroupBox(layout.title, table);
+            rootControl = maybeContainInGroupBox(layout.title, table, characterSheet);
 
             foreach (string name in layout.names)
                 rows.Add(new GurpenatorRow(characterSheet.Character.getPurchasedProperty(name), this));

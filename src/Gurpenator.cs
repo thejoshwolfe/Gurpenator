@@ -453,14 +453,18 @@ namespace Gurpenator
             return new Dictionary<string, object> {
                 { "name", Name } ,
                 { "layout", layout.toJson() },
-                { "purchases", new List<object>(from purchase in nameToPurchasedAttribute.Values
-                                                where purchase.PurchasedLevels != 0
+                { "purchases", new List<object>(from purchase in getAllPurchases()
                                                 select new Dictionary<string, object> {
                                                     {"trait", purchase.property.name},
                                                     {"purchased", purchase.PurchasedLevels},
                                                 })
                 },
             };
+        }
+
+        public IEnumerable<PurchasedProperty> getAllPurchases()
+        {
+            return from purchase in nameToPurchasedAttribute.Values where purchase.PurchasedLevels != 0 select purchase;
         }
         public static GurpsCharacter fromJson(object jsonObject, GurpsDatabase database)
         {
