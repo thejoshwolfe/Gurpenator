@@ -8,8 +8,8 @@ namespace Gurpenator
     public partial class CharacterSheet : Form
     {
         private EditorMode mode = EditorMode.EditMode;
-        private List<GurpenatorTable> tables = new List<GurpenatorTable>();
         private GurpsCharacter character;
+        private GurpenatorUiElement layout;
         public GurpsCharacter Character { get { return character; } }
         public readonly GurpsDatabase database;
         public CharacterSheet(GurpsDatabase database, string characterPath)
@@ -26,7 +26,6 @@ namespace Gurpenator
         {
             // default human
             var character = new GurpsCharacter(database);
-            character.addToSecondList("Human");
             character.getPurchasedProperty("Human").PurchasedLevels = 1;
             setCharacter(character);
             filePath = null;
@@ -42,24 +41,17 @@ namespace Gurpenator
                 character.changed -= setDirty;
             this.character = character;
             character.changed += setDirty;
-            nameTextBox.Text = character.Name;
-            initTable(new GurpenatorTable(attributesGroup, this, false, null), character.getVisibleAttributes());
-            initTable(new GurpenatorTable(otherGroup, this, true, typeof(Advantage)), character.getSecondPanelOfTraits());
+            layout = character.layout.createUi(this);
+            Control control = layout.RootControl;
+            this.Controls.Add(control);
+            control.BringToFront();
             Dirty = false;
-        }
-        private void initTable(GurpenatorTable table, IEnumerable<PurchasedProperty> properties)
-        {
-            var rows = new List<GurpenatorRow>();
-            foreach (PurchasedProperty property in properties)
-                rows.Add(new GurpenatorRow(property, table));
-            table.setRows(rows);
-            tables.Add(table);
         }
 
         private void toggleModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             mode = mode != EditorMode.PlayMode ? EditorMode.PlayMode : EditorMode.EditMode;
-            foreach (var table in tables)
+            foreach (var table in getTables())
                 table.Mode = mode;
         }
 
@@ -132,20 +124,19 @@ namespace Gurpenator
             return dialog.FileName;
         }
 
+        private IEnumerable<GurpenatorTable> getTables()
+        {
+            return layout.getTables();
+        }
         public void suspendUi()
         {
-            foreach (var table in tables)
+            foreach (var table in getTables())
                 table.suspendLayout();
         }
         public void resumeUi()
         {
-            foreach (var table in tables)
+            foreach (var table in getTables())
                 table.resumeLayout();
-        }
-
-        private void nameTextBox_TextChanged(object sender, EventArgs e)
-        {
-            character.Name = nameTextBox.Text.Trim();
         }
 
         private bool dirty = false;
@@ -167,9 +158,8 @@ namespace Gurpenator
                 displayName = "[No Name]";
             displayName += " - Gurpenator";
             if (dirty)
-                this.Text = "*" + displayName;
-            else
-                this.Text = displayName;
+                displayName = "*" + displayName;
+            this.Text = displayName;
         }
         private void setDirty()
         {

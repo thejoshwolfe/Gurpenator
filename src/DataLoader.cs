@@ -38,10 +38,9 @@ namespace Gurpenator
                 }
             }
 
-            // make sure core attributes are defined
-            foreach (string name in GurpsCharacter.coreAttributeNames)
-                if (!nameToThing.ContainsKey(name))
-                    throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
+            // make sure some core attributes are defined
+            if (!nameToThing.ContainsKey("Human"))
+                throw new Exception("ERROR: missing definition of core attribute \"Human\"");
 
             checkFormulas(nameToThing);
 
@@ -50,7 +49,8 @@ namespace Gurpenator
             nameToThing["Swing"].formattingFunction = GurpsProperty.formatAsDice;
             // display Basic Speed in m/s rather than Basic Speed x4 in m/s*4.
             nameToThing["Basic Speed x4"].DisplayName = "Basic Speed";
-            nameToThing["Basic Speed x4"].formattingFunction = delegate(int value) { return (value * 0.25).ToString(); };
+            nameToThing["Basic Speed x4"].formattingFunction = (value) => (value * 0.25).ToString();
+            nameToThing["Fright Check"].formattingFunction = (value) => value <= 13 ? value.ToString() : "13+" + (value - 13);
         }
 
         private static void checkFormulas(Dictionary<string, GurpsProperty> nameToThing)
@@ -224,7 +224,7 @@ namespace Gurpenator
                 case ":":
                     if (skillFormulaRegex.IsMatch(parsedThing.formula))
                     {
-                        SkillDifficulty difficulty = difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
+                        SkillDifficulty difficulty = AbstractSkill.difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
                         Formula formula = FormulaParser.parseFormula(parsedThing.formula.Remove(parsedThing.formula.Length - 1), parsedThing);
                         return new Skill(parsedThing, difficulty, formula);
                     }
@@ -242,7 +242,7 @@ namespace Gurpenator
                         string formulaText = parsedThing.formula;
                         if (skillFormulaRegex.IsMatch(parsedThing.formula))
                         {
-                            difficulty = difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
+                            difficulty = AbstractSkill.difficultyFromChar(parsedThing.formula[parsedThing.formula.Length - 1]);
                             formulaText = parsedThing.formula.Remove(parsedThing.formula.Length - 1);
                         }
                         Formula formula = FormulaParser.parseFormula(formulaText, parsedThing);
@@ -258,21 +258,6 @@ namespace Gurpenator
                 default:
                     throw new Exception("ERROR: expected ':', '=', or ':='. Got '" + parsedThing.declarationOperator + "' " + parsedThing.getLocationString());
             }
-        }
-        private static SkillDifficulty difficultyFromChar(char c)
-        {
-            switch (c)
-            {
-                case 'E':
-                    return SkillDifficulty.Easy;
-                case 'A':
-                    return SkillDifficulty.Average;
-                case 'H':
-                    return SkillDifficulty.Hard;
-                case 'V':
-                    return SkillDifficulty.VeryHard;
-            }
-            throw null;
         }
 
         private static bool isLineBlank(string line)

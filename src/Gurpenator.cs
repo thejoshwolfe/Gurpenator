@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace Gurpenator
 {
@@ -11,14 +12,14 @@ namespace Gurpenator
 
         public List<GurpsProperty> search(string query)
         {
-            return new List<GurpsProperty>(internalSearch(query).OrderBy((property) => property.name));
+            return new List<GurpsProperty>(internalSearch(query).OrderBy((property) => property.DisplayName));
         }
         private IEnumerable<GurpsProperty> internalSearch(string query)
         {
             var words = query.ToLower().Split(' ');
             foreach (GurpsProperty property in nameToThing.Values)
             {
-                var nameToLower = property.name.ToLower();
+                var nameToLower = property.DisplayName.ToLower();
                 if (words.All((word) => nameToLower.Contains(word)))
                     yield return property;
             }
@@ -60,6 +61,10 @@ namespace Gurpenator
     {
         Unspecified, Easy, Average, Hard, VeryHard
     }
+    public enum TraitTypeFilter
+    {
+        Locked, Advantages, Disadvantages, Skills
+    }
     public abstract class AbstractSkill : GurpsProperty
     {
         public bool category = false;
@@ -81,6 +86,28 @@ namespace Gurpenator
         }
 
         public abstract Formula getBaseFormula();
+        public static SkillDifficulty difficultyFromChar(char c)
+        {
+            switch (c)
+            {
+                case 'E': return SkillDifficulty.Easy;
+                case 'A': return SkillDifficulty.Average;
+                case 'H': return SkillDifficulty.Hard;
+                case 'V': return SkillDifficulty.VeryHard;
+            }
+            throw null;
+        }
+        public static string difficultyToString(SkillDifficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case SkillDifficulty.Easy: return "E";
+                case SkillDifficulty.Average: return "A";
+                case SkillDifficulty.Hard: return "H";
+                case SkillDifficulty.VeryHard: return "V";
+            }
+            throw null;
+        }
     }
     public class Skill : AbstractSkill
     {
@@ -231,7 +258,7 @@ namespace Gurpenator
             }
             throw null;
         }
-        public bool nonDefault { get { return GurpsCharacter.coreAttributeNames.Contains(property.name) || purchasedLevels > 0; } }
+        public bool nonDefault { get { return purchasedLevels > 0 || property is AttributeFunction || GurpsCharacter.isCoreAttribute(property.name); } }
         public string getFormattedValue() { return property.formattingFunction(getLevel()); }
         public bool hasCost { get { return !(property is AttributeFunction); } }
         public int getCost()
@@ -314,46 +341,52 @@ namespace Gurpenator
         {
             return property.name + ":" + purchasedLevels + ":" + getCost() + ":" + getFormattedValue();
         }
-
-        public object toJson()
-        {
-            return new Dictionary<string, object> {
-                {"trait", property.name},
-                {"purchased", purchasedLevels},
-            };
-        }
-
-        public static PurchasedProperty fromJson(object jsonObject, GurpsCharacter character)
-        {
-            var dict = (Dictionary<string, object>)jsonObject;
-            var traitName = (string)dict["trait"];
-            var result = new PurchasedProperty(character.getPurchasedProperty(traitName).property, character);
-            result.purchasedLevels = (int)dict["purchased"];
-            return result;
-        }
     }
 
     public class GurpsCharacter
     {
-        private static readonly string[] attributeNames = {
-            "TL",
-            "ST", "DX", "IQ", "HT",
-            "HP", "Will", "Per", "FP",
-            "Basic Lift",
-            "Basic Speed x4",
-            "Basic Move",
-            "Thrust", "Swing",
-            "Dodge",
-            "Fright Check",
-        };
-        private static readonly string[] hiddenAttributeNames = {
-            "Basic Lift ST",
-            "Damage ST",
-        };
-        public static readonly HashSet<string> coreAttributeNames = new HashSet<string>(attributeNames.Concat(hiddenAttributeNames));
+        public static bool isCoreAttribute(string name)
+        {
+            switch (name)
+            {
+                case "ST":
+                case "DX":
+                case "IQ":
+                case "HT":
+                case "HP":
+                case "Will":
+                case "Per":
+                case "FP":
+                    return true;
+            }
+            return false;
+        }
+        public AbstractTraitGroup layout = new TraitContainer(null, Orientation.Vertical,
+            new BasicInfoTraitGroup(),
+            new TraitContainer(null, Orientation.Horizontal,
+                new TraitContainer(null, Orientation.Vertical,
+                    new TraitContainer("Attributes", Orientation.Horizontal,
+                        new TraitList(null, TraitTypeFilter.Locked, "ST", "DX", "IQ", "HT"),
+                        new TraitList(null, TraitTypeFilter.Locked, "HP", "Will", "Per", "FP")
+                    ),
+                    new TraitList("Asdf", TraitTypeFilter.Locked, "Dodge", "Basic Lift"),
+                    new TraitList("Fdsa", TraitTypeFilter.Locked,
+                        "Thrust",
+                        "Swing",
+                        "Basic Speed x4",
+                        "Basic Move",
+                        "Fright Check"
+                    )
+                ),
+                new TraitContainer(null, Orientation.Vertical,
+                    new TraitList("Advantages", TraitTypeFilter.Advantages, "Human"),
+                    new TraitList("Disadvantages", TraitTypeFilter.Disadvantages)
+                ),
+                new TraitList("Skills", TraitTypeFilter.Skills)
+            )
+        );
 
         private Dictionary<string, PurchasedProperty> nameToPurchasedAttribute = new Dictionary<string, PurchasedProperty>();
-        private List<string> secondListOfTraits = new List<string>();
 
         public event Action changed;
 
@@ -389,44 +422,24 @@ namespace Gurpenator
                 }
             }
         }
-        private void raiseChanged()
+        public void raiseChanged()
         {
             if (changed != null) changed();
-        }
-        public IEnumerable<PurchasedProperty> getVisibleAttributes()
-        {
-            foreach (string attributeName in attributeNames)
-                yield return nameToPurchasedAttribute[attributeName];
-        }
-        public IEnumerable<PurchasedProperty> getSecondPanelOfTraits()
-        {
-            foreach (var name in secondListOfTraits)
-                yield return nameToPurchasedAttribute[name];
-        }
-        public void addToSecondList(string name)
-        {
-            if (secondListOfTraits.Contains(name))
-                return;
-            secondListOfTraits.Add(name);
         }
         public PurchasedProperty getPurchasedProperty(string name) { return nameToPurchasedAttribute[name]; }
 
         public object toJson()
         {
-            var attributes = new List<object>();
-            foreach (string name in attributeNames)
-            {
-                PurchasedProperty thing = getPurchasedProperty(name);
-                if (thing.hasCost)
-                    attributes.Add(thing.toJson());
-            }
-            var secondList = new List<object>();
-            foreach (string name in secondListOfTraits)
-                secondList.Add(getPurchasedProperty(name).toJson());
             return new Dictionary<string, object> {
                 { "name", Name } ,
-                { "attributes", attributes },
-                { "secondList", secondList },
+                { "layout", layout.toJson() },
+                { "purchases", new List<object>(from purchase in nameToPurchasedAttribute.Values
+                                                where purchase.PurchasedLevels != 0
+                                                select new Dictionary<string, object> {
+                                                    {"trait", purchase.property.name},
+                                                    {"purchased", purchase.PurchasedLevels},
+                                                })
+                },
             };
         }
         public static GurpsCharacter fromJson(object jsonObject, GurpsDatabase database)
@@ -434,27 +447,13 @@ namespace Gurpenator
             GurpsCharacter character = new GurpsCharacter(database);
             var dict = (Dictionary<string, object>)jsonObject;
             character.name = (string)dict["name"];
-            var attributes = (List<object>)dict["attributes"];
-            var secondList = (List<object>)dict["secondList"];
-            foreach (object purchase in attributes.Concat(secondList))
+            character.layout = AbstractTraitGroup.fromJson(dict["layout"]);
+            foreach (object purchaseObject in (List<object>)dict["purchases"])
             {
-                PurchasedProperty purchasedProperty = PurchasedProperty.fromJson(purchase, character);
-                character.getPurchasedProperty(purchasedProperty.property.name).PurchasedLevels = purchasedProperty.PurchasedLevels;
-            }
-            foreach (object thing in secondList)
-            {
-                PurchasedProperty purchasedProperty = PurchasedProperty.fromJson(thing, character);
-                character.secondListOfTraits.Add(purchasedProperty.property.name);
+                var purchase = (Dictionary<string, object>)purchaseObject;
+                character.getPurchasedProperty((string)purchase["trait"]).PurchasedLevels = (int)purchase["purchased"];
             }
             return character;
-        }
-
-        public PurchasedProperty addToSecondPanel(string name)
-        {
-            secondListOfTraits.Add(name);
-            raiseChanged();
-            // TODO: this is retarted
-            return getPurchasedProperty(name);
         }
     }
 

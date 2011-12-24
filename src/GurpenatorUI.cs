@@ -11,29 +11,200 @@ namespace Gurpenator
     {
         EditMode, PlayMode
     }
-    public class GurpenatorTable
+    public abstract class AbstractTraitGroup
     {
-        public readonly CharacterSheet characterSheet;
-        private TableLayoutPanel table;
-        private List<GurpenatorRow> rows = new List<GurpenatorRow>();
-        private bool allowAddRemoveRows;
-        private Type typeFilter;
-        private TextBox newItemTextBox;
-        private EditorMode mode = EditorMode.EditMode;
-        public GurpenatorTable(Control parent, CharacterSheet characterSheet, bool allowAddRemoveRows, Type typeFilter)
+        public abstract GurpenatorUiElement createUi(CharacterSheet characterSheet);
+
+        public abstract object toJson();
+        public static AbstractTraitGroup fromJson(object jsonObject)
+        {
+            if (jsonObject as string == "BasicInfoTraitGroup")
+                return new BasicInfoTraitGroup();
+            if (jsonObject is Dictionary<string, object>)
+            {
+                var dict = (Dictionary<string, object>)jsonObject;
+                if (dict.ContainsKey("orientation"))
+                {
+                    string title = null;
+                    try { title = (string)dict["title"]; }
+                    catch (KeyNotFoundException) { }
+                    return new TraitContainer(title, (Orientation)dict["orientation"], (from o in (List<object>)dict["members"] select fromJson(o)).ToArray());
+                }
+                if (dict.ContainsKey("names"))
+                {
+                    string title = null;
+                    try { title = (string)dict["title"]; }
+                    catch (KeyNotFoundException) { }
+                    TraitTypeFilter filter = TraitTypeFilter.Locked;
+                    try { filter = (TraitTypeFilter)dict["filter"]; }
+                    catch (KeyNotFoundException) { }
+                    return new TraitList(title, filter, (from name in (List<object>)dict["names"] select (string)name).ToArray());
+                }
+            }
+            throw null;
+        }
+    }
+    public class TraitContainer : AbstractTraitGroup
+    {
+        private string title;
+        private Orientation orientation;
+        private AbstractTraitGroup[] members;
+        public TraitContainer(string title, Orientation orientation, params AbstractTraitGroup[] members)
+        {
+            this.title = title;
+            this.orientation = orientation;
+            this.members = members;
+        }
+        public override GurpenatorUiElement createUi(CharacterSheet characterSheet)
+        {
+            return new GurpenatorLayoutPanel(title, orientation, characterSheet, (from m in members select m.createUi(characterSheet)).ToList());
+        }
+        public override object toJson()
+        {
+            var result = new Dictionary<string, object>();
+            if (title != null)
+                result["title"] = title;
+            result["orientation"] = (int)orientation;
+            result["members"] = new List<object>(from m in members select m.toJson());
+            return result;
+        }
+    }
+    public class TraitList : AbstractTraitGroup
+    {
+        public string title;
+        public TraitTypeFilter filter;
+        public List<string> names;
+        public TraitList(string title, TraitTypeFilter filter, params string[] names)
+        {
+            this.title = title;
+            this.filter = filter;
+            this.names = names.ToList();
+        }
+        public override GurpenatorUiElement createUi(CharacterSheet characterSheet)
+        {
+            return new GurpenatorTable(characterSheet, this);
+        }
+        public override object toJson()
+        {
+            var result = new Dictionary<string, object>();
+            if (title != null)
+                result["title"] = title;
+            if (filter != TraitTypeFilter.Locked)
+                result["filter"] = (int)filter;
+            result["names"] = new List<object>(names);
+            return result;
+        }
+    }
+    public class BasicInfoTraitGroup : AbstractTraitGroup
+    {
+        public override GurpenatorUiElement createUi(CharacterSheet characterSheet)
+        {
+            return new BasicInfoUiThing(characterSheet);
+        }
+        public override object toJson()
+        {
+            return "BasicInfoTraitGroup";
+        }
+    }
+
+    public abstract class GurpenatorUiElement
+    {
+        public abstract Control RootControl { get; }
+        public abstract IEnumerable<GurpenatorTable> getTables();
+        protected static Control maybeContainInGroupBox(string title, TableLayoutPanel panel)
+        {
+            if (title == null)
+                return panel;
+            GroupBox groupBox = new GroupBox();
+            groupBox.Dock = DockStyle.Fill;
+            groupBox.AutoSize = true;
+            groupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            groupBox.Text = title;
+            groupBox.Controls.Add(panel);
+            return groupBox;
+        }
+    }
+    public class BasicInfoUiThing : GurpenatorUiElement
+    {
+        TableLayoutPanel panel;
+        public override Control RootControl { get { return panel; } }
+        TextBox nameTextBox;
+        CharacterSheet characterSheet;
+        public BasicInfoUiThing(CharacterSheet characterSheet)
         {
             this.characterSheet = characterSheet;
-            this.allowAddRemoveRows = allowAddRemoveRows;
-            this.typeFilter = typeFilter;
+            panel = new TableLayoutPanel();
+            panel.Dock = DockStyle.Fill;
+            panel.AutoSize = true;
+            panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            panel.ColumnCount = 2;
+            Label label = GurpenatorRow.createLabel();
+            label.Text = "Name:";
+            panel.Controls.Add(label);
+            nameTextBox = new TextBox();
+            nameTextBox.Width = 167;
+            nameTextBox.Text = characterSheet.Character.Name;
+            nameTextBox.TextChanged += nameTextBox_TextChanged;
+            panel.Controls.Add(nameTextBox);
+        }
+        private void nameTextBox_TextChanged(object sender, EventArgs e)
+        {
+            characterSheet.Character.Name = nameTextBox.Text.Trim();
+        }
+        public override IEnumerable<GurpenatorTable> getTables() { yield break; }
+    }
+    public class GurpenatorLayoutPanel : GurpenatorUiElement
+    {
+        private List<GurpenatorUiElement> members;
+        private Control rootControl;
+        public override Control RootControl { get { return rootControl; } }
+        public GurpenatorLayoutPanel(string title, Orientation orientation, CharacterSheet characterSheet, List<GurpenatorUiElement> members)
+        {
+            this.members = members;
+            TableLayoutPanel panel = new TableLayoutPanel();
+            panel.Dock = DockStyle.Fill;
+            panel.AutoSize = true;
+            panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            panel.ColumnCount = 1;
+            panel.RowCount = 1;
+            panel.GrowStyle = orientation == Orientation.Vertical ? TableLayoutPanelGrowStyle.AddRows : TableLayoutPanelGrowStyle.AddColumns;
+            foreach (GurpenatorUiElement element in members)
+                panel.Controls.Add(element.RootControl);
+            rootControl = maybeContainInGroupBox(title, panel);
+        }
+        public override IEnumerable<GurpenatorTable> getTables()
+        {
+            foreach (var member in members)
+                foreach (var result in member.getTables())
+                    yield return result;
+        }
+    }
+    public class GurpenatorTable : GurpenatorUiElement
+    {
+        public readonly CharacterSheet characterSheet;
+        private readonly TraitList layout;
+        private Control rootControl;
+        public override Control RootControl { get { return rootControl; } }
+        private TableLayoutPanel table;
+        private List<GurpenatorRow> rows = new List<GurpenatorRow>();
+        private bool allowAddRemoveRows { get { return layout.filter != TraitTypeFilter.Locked; } }
+        private TextBox newItemTextBox;
+        private EditorMode mode = EditorMode.EditMode;
+        public GurpenatorTable(CharacterSheet characterSheet, TraitList layout)
+        {
+            this.characterSheet = characterSheet;
+            this.layout = layout;
             table = new TableLayoutPanel();
             table.Dock = DockStyle.Fill;
             table.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             table.AutoSize = true;
-            parent.Controls.Clear();
-            parent.Controls.Add(table);
+            rootControl = maybeContainInGroupBox(layout.title, table);
 
+            foreach (string name in layout.names)
+                rows.Add(new GurpenatorRow(characterSheet.Character.getPurchasedProperty(name), this));
             refreshControls();
         }
+        public override IEnumerable<GurpenatorTable> getTables() { yield return this; }
         private void refreshControls()
         {
             using (new LayoutSuspender(table))
@@ -45,6 +216,8 @@ namespace Gurpenator
                     addRowControls(row);
                 if (allowAddRemoveRows && mode == EditorMode.EditMode)
                     addLastRow();
+                else
+                    table.Controls.Add(GurpenatorRow.createFiller());
             }
         }
         private void addRowControls(GurpenatorRow row)
@@ -85,7 +258,7 @@ namespace Gurpenator
                 foreach (var suggestion in suggestions)
                 {
                     Label label = new Label();
-                    label.Text = suggestion.name;
+                    label.Text = suggestion.DisplayName;
                     label.AutoSize = true;
                     label.Dock = DockStyle.Fill;
                     label.MouseEnter += (EventHandler)((_, __) => { label.BackColor = Color.PaleTurquoise; });
@@ -102,8 +275,11 @@ namespace Gurpenator
             using (new LayoutSuspender(table))
             {
                 table.Controls.Remove(newItemTextBox);
-                // TODO: addToSecondPanel is retarded
-                addRowControls(new GurpenatorRow(characterSheet.Character.addToSecondPanel(property.name), this));
+                layout.names.Add(property.name);
+                characterSheet.Character.raiseChanged();
+                var row = new GurpenatorRow(characterSheet.Character.getPurchasedProperty(property.name), this);
+                rows.Add(row);
+                addRowControls(row);
                 addLastRow();
             }
         }
@@ -127,13 +303,6 @@ namespace Gurpenator
             };
             newItemTextBox.LostFocus += (EventHandler)((_, __) => { clearSearchSuggestions(); });
             table.Controls.Add(newItemTextBox);
-        }
-        public void setRows(IEnumerable<GurpenatorRow> rows)
-        {
-            if (this.rows.Count != 0)
-                throw null;
-            this.rows.AddRange(rows);
-            refreshControls();
         }
         public EditorMode Mode
         {
@@ -183,9 +352,15 @@ namespace Gurpenator
         }
         public Label createHeaderLabel()
         {
-            Label header = creatLabel();
+            Label header = createLabel();
             header.TextAlign = ContentAlignment.MiddleLeft;
-            header.Text = purchasedProperty.property.DisplayName;
+            header.Text = purchasedProperty.property.DisplayName.Replace("&", "&&");
+            if (purchasedProperty.property is AbstractSkill)
+            {
+                // we probably want to do something more formal than this
+                var skill = (AbstractSkill)purchasedProperty.property;
+                new ToolTip().SetToolTip(header, skill.getBaseFormula() + " " + AbstractSkill.difficultyToString(skill.getDifficulty()));
+            }
             return header;
         }
         private CharacterSheet characterSheet { get { return table.characterSheet; } }
@@ -226,14 +401,14 @@ namespace Gurpenator
         {
             if (!purchasedProperty.hasCost)
                 return createFiller();
-            costLabel = creatLabel();
+            costLabel = createLabel();
             costLabel.TextAlign = ContentAlignment.MiddleRight;
             costLabel.Text = purchasedProperty.getCost().ToString();
             return costLabel;
         }
         public Label createOutputLabel()
         {
-            outputLabel = creatLabel();
+            outputLabel = createLabel();
             outputLabel.Text = purchasedProperty.getFormattedValue();
             if (purchasedProperty.property.formattingFunction == GurpsProperty.formatAsDice)
                 outputLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -241,14 +416,14 @@ namespace Gurpenator
                 outputLabel.TextAlign = ContentAlignment.MiddleRight;
             return outputLabel;
         }
-        private static Label creatLabel()
+        public static Label createLabel()
         {
             var label = new Label();
             label.AutoSize = true;
             label.Dock = DockStyle.Fill;
             return label;
         }
-        private static Control createFiller()
+        public static Control createFiller()
         {
             var result = new Label();
             result.Size = new Size();
