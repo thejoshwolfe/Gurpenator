@@ -93,26 +93,24 @@ namespace Gurpenator
         {
             saveAs();
         }
-        private void saveAs()
+        private bool saveAs()
         {
             string path = showFileDialog(new SaveFileDialog());
             if (path == null)
-                return;
+                return false;
             filePath = path;
-            save();
+            return save();
         }
-        private void save()
+        private bool save()
         {
             if (filePath == null)
-            {
-                saveAs();
-                return;
-            }
+                return saveAs();
             string serialization = DataLoader.jsonToString(character.toJson());
             File.WriteAllText(filePath, serialization);
             savedName = character.Name;
             Dirty = false;
             Preferences.Instance.RecentCharacter = filePath;
+            return true;
         }
         private string showFileDialog(FileDialog dialog)
         {
@@ -174,7 +172,8 @@ namespace Gurpenator
             switch (result)
             {
                 case System.Windows.Forms.DialogResult.Yes:
-                    save();
+                    if (!save())
+                        e.Cancel = true;
                     break;
                 case System.Windows.Forms.DialogResult.No:
                     break;

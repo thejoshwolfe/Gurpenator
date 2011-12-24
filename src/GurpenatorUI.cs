@@ -436,10 +436,7 @@ namespace Gurpenator
         {
             outputLabel = createLabel();
             outputLabel.Text = purchasedProperty.getFormattedValue();
-            if (purchasedProperty.property.formattingFunction == GurpsProperty.formatAsDice)
-                outputLabel.TextAlign = ContentAlignment.MiddleLeft;
-            else
-                outputLabel.TextAlign = ContentAlignment.MiddleRight;
+            outputLabel.TextAlign = ContentAlignment.MiddleRight;
             return outputLabel;
         }
         public static Label createLabel()
