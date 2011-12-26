@@ -13,7 +13,7 @@ namespace Gurpenator
         private GurpsCharacter character;
         private GurpenatorUiElement layout;
         public GurpsCharacter Character { get { return character; } }
-        public readonly GurpsDatabase database;
+        public GurpsDatabase database;
         public CharacterSheet(GurpsDatabase database, string characterPath)
         {
             InitializeComponent();
@@ -187,6 +187,16 @@ namespace Gurpenator
         {
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             MessageBox.Show(this, "Gurpenator " + version.Major + "." + version.Minor + "\n\nhttp://github.com/thejoshwolfe/Gurpenator", "About Gurpenator");
+        }
+
+        private void databasesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (new DatabaseListEditor().ShowDialog(this) == DialogResult.Cancel)
+                return;
+            // reload database and character
+            database = new GurpsDatabase();
+            DataLoader.readData(database, Preferences.Instance.Databases);
+            character = GurpsCharacter.fromJson(character.toJson(), database);
         }
     }
 }

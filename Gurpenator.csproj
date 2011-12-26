@@ -64,6 +64,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\DatabaseListEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\DatabaseListEditor.Designer.cs">
+      <DependentUpon>DatabaseListEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\DataLoader.cs" />
     <Compile Include="src\Gurpenator.cs" />
     <Compile Include="src\GurpenatorUI.cs" />
@@ -87,6 +93,9 @@
     </Compile>
     <EmbeddedResource Include="src\CharacterSheet.resx">
       <DependentUpon>CharacterSheet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="src\DatabaseListEditor.resx">
+      <DependentUpon>DatabaseListEditor.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="core.gurpenator_data">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

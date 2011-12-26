@@ -30,10 +30,8 @@ No Fine Manipulators: -30 {
 Trained By A Master: 30 "half penalty to Rapid Strike and multiple Parries per turn"
 # or for multi-line traits, you can put the comment as the first line inside the "{}".
 Combat Reflexes: 15 {
-    "+6 to IQ rolls to wake up or to recover from surprise or mental stun"
+    "+1 to Pary and Block. +6 to IQ rolls to wake up or to recover from surprise or mental stun"
     Dodge += 1
-    Parry += 1
-    Block += 1
     Fright Check += 2
     Fast Draw += 1
 }
