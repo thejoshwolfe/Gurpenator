@@ -186,7 +186,7 @@ namespace Gurpenator
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            MessageBox.Show(this, "Gurpenator " + version.Major + "." + version.Minor + "\n\nhttp://github.com/thejoshwolfe/Gurpenator", "About Gurpenator");
+            MessageBox.Show(this, "Gurpenator " + version.Major + "." + version.Minor + "." + version.Build + "\n\nhttp://github.com/thejoshwolfe/Gurpenator", "About Gurpenator");
         }
 
         private void databasesToolStripMenuItem_Click(object sender, EventArgs e)
