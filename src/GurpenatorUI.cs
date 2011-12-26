@@ -43,6 +43,8 @@ namespace Gurpenator
             }
             throw null;
         }
+
+        public virtual IEnumerable<string> getNames() { yield break; }
     }
     public class TraitContainer : AbstractTraitGroup
     {
@@ -67,6 +69,12 @@ namespace Gurpenator
             result["orientation"] = (int)orientation;
             result["members"] = new List<object>(from m in members select m.toJson());
             return result;
+        }
+        public override IEnumerable<string> getNames()
+        {
+            foreach (var member in members)
+                foreach (var result in member.getNames())
+                    yield return result;
         }
     }
     public class TraitList : AbstractTraitGroup
@@ -93,6 +101,10 @@ namespace Gurpenator
                 result["filter"] = (int)filter;
             result["names"] = new List<object>(names);
             return result;
+        }
+        public override IEnumerable<string> getNames()
+        {
+            return names;
         }
     }
     public class BasicInfoTraitGroup : AbstractTraitGroup
@@ -171,7 +183,7 @@ namespace Gurpenator
 
         private void character_changed()
         {
-            pointsTotalLabel.Text =  characterSheet.Character.getAllPurchases().Sum((property) => property.getCost()).ToString();
+            pointsTotalLabel.Text = characterSheet.Character.getAllPurchases().Sum((property) => property.getCost()).ToString();
         }
         private void nameTextBox_TextChanged(object sender, EventArgs e)
         {
@@ -247,32 +259,32 @@ namespace Gurpenator
         {
             table.Controls.Add(row.createHeaderLabel());
             table.Controls.Add(row.createOutputLabel());
-            if (mode == EditorMode.EditMode)
+            if (mode != EditorMode.EditMode)
+                return;
+            table.Controls.Add(row.createSpendingControl());
+            table.Controls.Add(row.createCostLabel());
+            if (allowAddRemoveRows)
             {
-                table.Controls.Add(row.createSpendingControl());
-                table.Controls.Add(row.createCostLabel());
-                if (allowAddRemoveRows)
+                var options = new Button();
+                options.AutoSize = true;
+                options.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                options.Text = "...";
+                options.Click += delegate(object _, EventArgs __)
                 {
-                    var options = new Button();
-                    options.AutoSize = true;
-                    options.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-                    options.Text = "...";
-                    options.Click += delegate(object _, EventArgs __)
+                    var menu = new ContextMenu();
+                    var deleteItem = new MenuItem("Delete");
+                    deleteItem.Click += delegate(object ___, EventArgs ____)
                     {
-                        var menu = new ContextMenu();
-                        var deleteItem = new MenuItem("Delete");
-                        deleteItem.Click += delegate(object ___, EventArgs ____)
-                        {
-                            row.dispose();
-                            rows.Remove(row);
-                            using (new LayoutSuspender(table))
-                                refreshControls();
-                        };
-                        menu.MenuItems.Add(deleteItem);
-                        menu.Show(options, new Point(0, options.Height));
+                        row.dispose();
+                        rows.Remove(row);
+                        layout.names.Remove(row.purchasedProperty.property.name);
+                        using (new LayoutSuspender(table))
+                            refreshControls();
                     };
-                    table.Controls.Add(options);
-                }
+                    menu.MenuItems.Add(deleteItem);
+                    menu.Show(options, new Point(0, options.Height));
+                };
+                table.Controls.Add(options);
             }
         }
         private TableLayoutPanel searchSuggestionBox = null;
@@ -342,7 +354,7 @@ namespace Gurpenator
             newItemTextBox.TextChanged += delegate(object sender, EventArgs e)
             {
                 if (newItemTextBox.Text.Trim() != "")
-                    suggest(characterSheet.database.search(newItemTextBox.Text, layout.filter));
+                    suggest(characterSheet.database.search(newItemTextBox.Text, layout.filter, characterSheet.Character));
                 else
                     clearSearchSuggestions();
             };
@@ -364,7 +376,7 @@ namespace Gurpenator
     }
     public class GurpenatorRow
     {
-        private readonly PurchasedProperty purchasedProperty;
+        public readonly PurchasedProperty purchasedProperty;
         private readonly GurpenatorTable table;
         private NumericUpDown spendingSpinner;
         private CheckBox spendingCheckbox;

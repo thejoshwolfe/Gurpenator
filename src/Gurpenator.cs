@@ -10,16 +10,23 @@ namespace Gurpenator
     {
         public Dictionary<string, GurpsProperty> nameToThing = new Dictionary<string, GurpsProperty>();
 
-        public List<GurpsProperty> search(string query, TraitTypeFilter filter)
+        public List<GurpsProperty> search(string query, TraitTypeFilter filter, GurpsCharacter character)
         {
-            return new List<GurpsProperty>(internalSearch(query, filter).OrderBy((property) => property.DisplayName));
+            return new List<GurpsProperty>(order(internalSearch(query, filter, character)));
         }
-        private IEnumerable<GurpsProperty> internalSearch(string query, TraitTypeFilter filter)
+        private IEnumerable<GurpsProperty> order(IEnumerable<GurpsProperty> results)
         {
+            return results.OrderBy((property) => property.DisplayName);
+        }
+        private IEnumerable<GurpsProperty> internalSearch(string query, TraitTypeFilter filter, GurpsCharacter character)
+        {
+            var dontInclude = new HashSet<string>(character.layout.getNames());
             var words = query.ToLower().Split(' ');
             foreach (GurpsProperty property in nameToThing.Values)
             {
                 if (!filterPasses(filter, property))
+                    continue;
+                if (dontInclude.Contains(property.name))
                     continue;
                 var nameToLower = property.DisplayName.ToLower();
                 if (words.All((word) => nameToLower.Contains(word)))
