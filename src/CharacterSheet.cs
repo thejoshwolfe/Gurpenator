@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.Reflection;
 
 namespace Gurpenator
 {
@@ -180,6 +181,12 @@ namespace Gurpenator
                     e.Cancel = true;
                     break;
             }
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            MessageBox.Show(this, "Gurpenator " + version.Major + "." + version.Minor + "\n\nhttp://github.com/thejoshwolfe/Gurpenator", "About Gurpenator");
         }
     }
 }
