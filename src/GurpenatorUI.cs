@@ -238,6 +238,12 @@ namespace Gurpenator
             table.AutoSize = true;
             rootControl = maybeContainInGroupBox(layout.title, table, characterSheet);
 
+            refreshRows();
+        }
+
+        private void refreshRows()
+        {
+            rows.Clear();
             foreach (string name in layout.names)
                 rows.Add(new GurpenatorRow(characterSheet.Character.getPurchasedProperty(name), this));
             refreshControls();
@@ -333,11 +339,9 @@ namespace Gurpenator
             {
                 table.Controls.Remove(newItemTextBox);
                 layout.names.Add(property.name);
+                layout.names.Sort();
                 characterSheet.Character.raiseChanged();
-                var row = new GurpenatorRow(characterSheet.Character.getPurchasedProperty(property.name), this);
-                rows.Add(row);
-                addRowControls(row);
-                addLastRow();
+                refreshRows();
             }
         }
         private void clearSearchSuggestions()
