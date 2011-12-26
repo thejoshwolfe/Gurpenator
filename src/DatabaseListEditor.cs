@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.IO;
+using System.Windows.Forms;
 
 namespace Gurpenator
 {
@@ -28,6 +23,8 @@ namespace Gurpenator
         private void addButton_Click(object sender, EventArgs e)
         {
             var dialog = new OpenFileDialog();
+            var extension = ".gurpenator_data";
+            dialog.Filter = "Gurpenator Database (*" + extension + ")|*" + extension;
             var result = dialog.ShowDialog(this);
             if (result != DialogResult.OK)
                 return;
