@@ -162,6 +162,7 @@ namespace Gurpenator
             panel.Controls.Add(pointsTotalLabelLabel);
 
             pointsTotalLabel = GurpenatorRow.createLabel();
+            pointsTotalLabel.TextAlign = ContentAlignment.MiddleLeft;
             panel.Controls.Add(pointsTotalLabel);
 
             character_changed();
@@ -232,27 +233,46 @@ namespace Gurpenator
         public override IEnumerable<GurpenatorTable> getTables() { yield return this; }
         private void refreshControls()
         {
-            using (new LayoutSuspender(table))
-            {
-                table.Controls.Clear();
-                newItemTextBox = null;
-                table.ColumnCount = mode == EditorMode.PlayMode ? 2 : 4;
-                foreach (GurpenatorRow row in rows)
-                    addRowControls(row);
-                if (allowAddRemoveRows && mode == EditorMode.EditMode)
-                    addLastRow();
-                else
-                    table.Controls.Add(GurpenatorRow.createFiller());
-            }
+            table.Controls.Clear();
+            newItemTextBox = null;
+            table.ColumnCount = mode == EditorMode.PlayMode ? 2 : allowAddRemoveRows ? 5 : 4;
+            foreach (GurpenatorRow row in rows)
+                addRowControls(row);
+            if (allowAddRemoveRows && mode == EditorMode.EditMode)
+                addLastRow();
+            else
+                table.Controls.Add(GurpenatorRow.createFiller());
         }
         private void addRowControls(GurpenatorRow row)
         {
             table.Controls.Add(row.createHeaderLabel());
             table.Controls.Add(row.createOutputLabel());
-            if (table.ColumnCount == 4)
+            if (mode == EditorMode.EditMode)
             {
                 table.Controls.Add(row.createSpendingControl());
                 table.Controls.Add(row.createCostLabel());
+                if (allowAddRemoveRows)
+                {
+                    var options = new Button();
+                    options.AutoSize = true;
+                    options.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                    options.Text = "...";
+                    options.Click += delegate(object _, EventArgs __)
+                    {
+                        var menu = new ContextMenu();
+                        var deleteItem = new MenuItem("Delete");
+                        deleteItem.Click += delegate(object ___, EventArgs ____)
+                        {
+                            row.dispose();
+                            rows.Remove(row);
+                            using (new LayoutSuspender(table))
+                                refreshControls();
+                        };
+                        menu.MenuItems.Add(deleteItem);
+                        menu.Show(options, new Point(0, options.Height));
+                    };
+                    table.Controls.Add(options);
+                }
             }
         }
         private TableLayoutPanel searchSuggestionBox = null;
@@ -363,6 +383,7 @@ namespace Gurpenator
             costLabel = null;
             outputLabel = null;
             purchasedProperty.changed -= purchasedProperty_changed;
+            purchasedProperty.PurchasedLevels = 0;
         }
         private void purchasedProperty_changed()
         {
@@ -444,6 +465,7 @@ namespace Gurpenator
             var label = new Label();
             label.AutoSize = true;
             label.Dock = DockStyle.Fill;
+            label.TextAlign = ContentAlignment.MiddleCenter;
             return label;
         }
         public static Control createFiller()

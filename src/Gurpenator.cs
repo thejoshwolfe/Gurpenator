@@ -278,7 +278,7 @@ namespace Gurpenator
             }
             throw null;
         }
-        public bool nonDefault { get { return purchasedLevels > 0 || property is AttributeFunction || GurpsCharacter.isCoreAttribute(property.name); } }
+        public bool nonDefault { get { return purchasedLevels > 0 || property is AttributeFunction || GurpsCharacter.coreAttributeNames.Contains(property.name); } }
         public string getFormattedValue() { return property.formattingFunction(getLevel()); }
         public bool hasCost { get { return !(property is AttributeFunction); } }
         public int getCost()
@@ -365,22 +365,19 @@ namespace Gurpenator
 
     public class GurpsCharacter
     {
-        public static bool isCoreAttribute(string name)
+        public static readonly HashSet<string> coreAttributeNames = new HashSet<string>
         {
-            switch (name)
-            {
-                case "ST":
-                case "DX":
-                case "IQ":
-                case "HT":
-                case "HP":
-                case "Will":
-                case "Per":
-                case "FP":
-                    return true;
-            }
-            return false;
-        }
+                "TL",
+                "ST", "DX", "IQ", "HT",
+                "HP", "Will", "Per", "FP",
+                "Basic Lift ST", "Basic Lift",
+                "Basic Speed x4", "Basic Move",
+                "Damage ST",
+                "Thrust", "Swing",
+                "Dodge",
+                "Fright Check",
+        };
+        public const string HUMAN = "Human";
         public AbstractTraitGroup layout = new TraitContainer(null, Orientation.Vertical,
             new BasicInfoTraitGroup(),
             new TraitContainer(null, Orientation.Horizontal,

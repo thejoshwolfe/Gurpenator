@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace Gurpenator
 {
@@ -51,8 +52,10 @@ namespace Gurpenator
         private void toggleModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             mode = mode != EditorMode.PlayMode ? EditorMode.PlayMode : EditorMode.EditMode;
-            foreach (var table in getTables())
+            suspendUi();
+            foreach (var table in layout.getTables())
                 table.Mode = mode;
+            resumeUi();
         }
 
         private const string extension = ".gurpenator_character";
@@ -122,18 +125,14 @@ namespace Gurpenator
             return dialog.FileName;
         }
 
-        private IEnumerable<GurpenatorTable> getTables()
-        {
-            return layout.getTables();
-        }
         public void suspendUi()
         {
-            foreach (var table in getTables())
+            foreach (var table in layout.getTables())
                 table.suspendLayout();
         }
         public void resumeUi()
         {
-            foreach (var table in getTables())
+            foreach (var table in layout.getTables().Reverse())
                 table.resumeLayout();
         }
 

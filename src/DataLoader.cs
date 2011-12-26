@@ -39,8 +39,9 @@ namespace Gurpenator
             }
 
             // make sure some core attributes are defined
-            if (!nameToThing.ContainsKey("Human"))
-                throw new Exception("ERROR: missing definition of core attribute \"Human\"");
+            foreach (string name in GurpsCharacter.coreAttributeNames.Concat(new string[] { GurpsCharacter.HUMAN }))
+                if (!nameToThing.ContainsKey(name))
+                    throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
 
             checkFormulas(nameToThing);
 
