@@ -75,7 +75,7 @@ namespace Gurpenator
         {
             var result = new Preferences();
             try { result.databases = new List<string>(from o in (List<object>)rootObject["databases"] select (string)o); }
-            catch (KeyNotFoundException) { result.databases = new List<string> { "core.gurpenator_data", "example.gurpenator_data" }; }
+            catch (KeyNotFoundException) { result.databases = new List<string> { "core.gurpenator_data" }; }
             try { result.recentCharacter = (string)rootObject["recentCharacter"]; }
             catch (KeyNotFoundException) { result.recentCharacter = null; }
             return result;
