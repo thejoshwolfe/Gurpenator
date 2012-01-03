@@ -196,7 +196,7 @@ namespace Gurpenator
             // reload database and character
             database = new GurpsDatabase();
             DataLoader.readData(database, Preferences.Instance.Databases);
-            character = GurpsCharacter.fromJson(character.toJson(), database);
+            setCharacter(GurpsCharacter.fromJson(character.toJson(), database));
         }
     }
 }
