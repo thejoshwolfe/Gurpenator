@@ -133,7 +133,8 @@ namespace Gurpenator
             groupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             Action updateText = delegate()
             {
-                int cost = getTables().Sum((table) => table.layout.names.Sum((name) => characterSheet.Character.getPurchasedProperty(name).getCost()));
+                IEnumerable<PurchasedProperty> properties = getTables().Select((table) => table.layout.names.Select((name) => characterSheet.Character.getPurchasedProperty(name))).chain();
+                int cost = (from property in properties where property.nonDefault select property.getCost()).Sum();
                 groupBox.Text = title + " (" + cost + ")";
             };
             updateText();
