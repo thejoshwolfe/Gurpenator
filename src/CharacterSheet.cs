@@ -201,5 +201,10 @@ namespace Gurpenator
             DataLoader.readData(database, Preferences.Instance.Databases);
             setCharacter(GurpsCharacter.fromJson(character.toJson(), database));
         }
+
+        private void diceRollerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new DiceRollerWindow().Show();
+        }
     }
 }

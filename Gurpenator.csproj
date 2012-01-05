@@ -71,6 +71,12 @@
       <DependentUpon>DatabaseListEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="src\DataLoader.cs" />
+    <Compile Include="src\DiceRollerWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\DiceRollerWindow.Designer.cs">
+      <DependentUpon>DiceRollerWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\Gurpenator.cs" />
     <Compile Include="src\GurpenatorUI.cs" />
     <Compile Include="src\CharacterSheet.cs">
@@ -97,6 +103,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="src\DatabaseListEditor.resx">
       <DependentUpon>DatabaseListEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="src\DiceRollerWindow.resx">
+      <DependentUpon>DiceRollerWindow.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="core.gurpenator_data">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
