@@ -406,7 +406,9 @@ namespace Gurpenator
                     new TraitList("Advantages", TraitTypeFilter.Advantages, "Human"),
                     new TraitList("Disadvantages", TraitTypeFilter.Disadvantages)
                 ),
-                new TraitList("Skills", TraitTypeFilter.Skills)
+                new TraitContainer(null, Orientation.Vertical,
+                    new TraitList("Skills", TraitTypeFilter.Skills)
+                )
             )
         );
 

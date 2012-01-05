@@ -209,6 +209,7 @@ namespace Gurpenator
             panel.GrowStyle = orientation == Orientation.Vertical ? TableLayoutPanelGrowStyle.AddRows : TableLayoutPanelGrowStyle.AddColumns;
             foreach (GurpenatorUiElement element in members)
                 panel.Controls.Add(element.RootControl);
+            panel.Controls.Add(GurpenatorRow.createFiller());
             rootControl = maybeContainInGroupBox(title, panel, characterSheet);
         }
         public override IEnumerable<GurpenatorTable> getTables()

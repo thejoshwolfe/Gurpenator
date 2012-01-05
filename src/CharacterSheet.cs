@@ -11,6 +11,7 @@ namespace Gurpenator
     {
         private EditorMode mode = EditorMode.EditMode;
         private GurpsCharacter character;
+        private Control layoutControl;
         private GurpenatorUiElement layout;
         public GurpsCharacter Character { get { return character; } }
         public GurpsDatabase database;
@@ -41,12 +42,14 @@ namespace Gurpenator
         {
             if (this.character != null)
                 character.changed -= setDirty;
+            if (layoutControl != null)
+                this.Controls.Remove(layoutControl);
             this.character = character;
             character.changed += setDirty;
             layout = character.layout.createUi(this);
-            Control control = layout.RootControl;
-            this.Controls.Add(control);
-            control.BringToFront();
+            layoutControl = layout.RootControl;
+            this.Controls.Add(layoutControl);
+            layoutControl.BringToFront();
             Dirty = false;
         }
 
