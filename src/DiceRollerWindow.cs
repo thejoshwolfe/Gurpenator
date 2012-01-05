@@ -68,7 +68,8 @@ namespace Gurpenator
                     var numbers = new List<int>();
                     for (int i = 0; i < count; i++)
                         numbers.Add(random.Next(d) + 1);
-
+                    numbers.Sort();
+                    numbers.Reverse();
                     string newText = "Rolling " + count + "d" + d + ":\r\n" +
                         numbers.Sum() + " = " + string.Join("+", numbers) + "\r\n\r\n";
                     consoleText.Text = newText + consoleText.Text;
