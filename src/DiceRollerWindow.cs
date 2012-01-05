@@ -69,8 +69,8 @@ namespace Gurpenator
                     for (int i = 0; i < count; i++)
                         numbers.Add(random.Next(d) + 1);
 
-                    string newText = "Rolling " + count + "d" + d + ":\n" +
-                        numbers.Sum() + " = " + string.Join("+", numbers) + "\n\n";
+                    string newText = "Rolling " + count + "d" + d + ":\r\n" +
+                        numbers.Sum() + " = " + string.Join("+", numbers) + "\r\n\r\n";
                     consoleText.Text = newText + consoleText.Text;
                 };
                 rollingTable.Controls.Add(rollButton);
