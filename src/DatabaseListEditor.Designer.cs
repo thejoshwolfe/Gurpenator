@@ -36,6 +36,8 @@
             this.removeButton = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.listBox = new System.Windows.Forms.ListBox();
+            this.errorDisplayBox = new System.Windows.Forms.TextBox();
+            this.refreshButton = new System.Windows.Forms.Button();
             this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -80,6 +82,7 @@
             this.flowLayoutPanel2.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.flowLayoutPanel2.Controls.Add(this.addButton);
             this.flowLayoutPanel2.Controls.Add(this.removeButton);
+            this.flowLayoutPanel2.Controls.Add(this.refreshButton);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Right;
             this.flowLayoutPanel2.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flowLayoutPanel2.Location = new System.Drawing.Point(436, 0);
@@ -115,12 +118,14 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 5F));
             this.tableLayoutPanel1.Controls.Add(this.listBox, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.errorDisplayBox, 1, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowCount = 4;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 5F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 5F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(436, 209);
             this.tableLayoutPanel1.TabIndex = 2;
@@ -131,9 +136,30 @@
             this.listBox.FormattingEnabled = true;
             this.listBox.Location = new System.Drawing.Point(8, 8);
             this.listBox.Name = "listBox";
-            this.listBox.Size = new System.Drawing.Size(420, 193);
+            this.listBox.Size = new System.Drawing.Size(420, 167);
             this.listBox.TabIndex = 3;
             this.listBox.SelectedIndexChanged += new System.EventHandler(this.listBox_SelectedIndexChanged);
+            // 
+            // errorDisplayBox
+            // 
+            this.errorDisplayBox.BackColor = System.Drawing.Color.Tomato;
+            this.errorDisplayBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.errorDisplayBox.Location = new System.Drawing.Point(8, 181);
+            this.errorDisplayBox.Name = "errorDisplayBox";
+            this.errorDisplayBox.ReadOnly = true;
+            this.errorDisplayBox.Size = new System.Drawing.Size(420, 20);
+            this.errorDisplayBox.TabIndex = 4;
+            this.errorDisplayBox.Visible = false;
+            // 
+            // refreshButton
+            // 
+            this.refreshButton.Location = new System.Drawing.Point(3, 61);
+            this.refreshButton.Name = "refreshButton";
+            this.refreshButton.Size = new System.Drawing.Size(75, 23);
+            this.refreshButton.TabIndex = 2;
+            this.refreshButton.Text = "&Refresh";
+            this.refreshButton.UseVisualStyleBackColor = true;
+            this.refreshButton.Click += new System.EventHandler(this.refreshButton_Click);
             // 
             // DatabaseListEditor
             // 
@@ -150,6 +176,7 @@
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -165,6 +192,8 @@
         private System.Windows.Forms.Button removeButton;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.ListBox listBox;
+        private System.Windows.Forms.TextBox errorDisplayBox;
+        private System.Windows.Forms.Button refreshButton;
 
     }
 }

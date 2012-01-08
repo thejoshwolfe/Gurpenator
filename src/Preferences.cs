@@ -31,6 +31,11 @@ namespace Gurpenator
                 save();
             }
         }
+        public static List<string> defaultDatabases
+        {
+            get { return new List<string> { "core.gurpenator_data" }; }
+        }
+
         private string recentCharacter;
         public string RecentCharacter
         {
@@ -45,7 +50,7 @@ namespace Gurpenator
         }
         private Preferences() { }
 
-        public void save()
+        private void save()
         {
             var rootObject = new Dictionary<string, object>();
             rootObject["databases"] = new List<object>(databases);
@@ -75,7 +80,7 @@ namespace Gurpenator
         {
             var result = new Preferences();
             try { result.databases = new List<string>(from o in (List<object>)rootObject["databases"] select (string)o); }
-            catch (KeyNotFoundException) { result.databases = new List<string> { "core.gurpenator_data" }; }
+            catch (KeyNotFoundException) { result.databases =  defaultDatabases; }
             try { result.recentCharacter = (string)rootObject["recentCharacter"]; }
             catch (KeyNotFoundException) { result.recentCharacter = null; }
             return result;

@@ -452,7 +452,11 @@ namespace Gurpenator
         {
             if (changed != null) changed();
         }
-        public PurchasedProperty getPurchasedProperty(string name) { return nameToPurchasedAttribute[name]; }
+        public PurchasedProperty getPurchasedProperty(string name)
+        {
+            try { return nameToPurchasedAttribute[name]; }
+            catch (KeyNotFoundException) { throw new GurpenatorException("Character requires trait that is not defined in any loaded database: \"" + name + "\""); }
+        }
 
         public object toJson()
         {
@@ -523,19 +527,19 @@ namespace Gurpenator
                 if (enclosingProperty is IntAdvantage || enclosingProperty is AbstractSkill)
                     return enclosingProperty;
 
-            throw new Exception("ERROR: name not defined '" + token.text + "' " + token.parseThing.getLocationString());
+            throw token.parseThing.createError("name not defined '" + token.text + "'");
         }
         public static void throwNotAnIntError(Token token)
         {
-            throw new Exception("ERROR: cannot interpret '" + token.ToString() + "' as an integer " + token.parseThing.getLocationString());
+            throw token.parseThing.createError("cannot interpret '" + token.ToString() + "' as an integer");
         }
         public static void throwNotABooleanError(Token token)
         {
-            throw new Exception("ERROR: cannot interpret '" + token.ToString() + "' as a conditional expression " + token.parseThing.getLocationString());
+            throw token.parseThing.createError("cannot interpret '" + token.ToString() + "' as a conditional expression");
         }
         public static void throwNotAPercentError(Token token)
         {
-            throw new Exception("ERROR: cannot interpret '" + token.ToString() + "' as a percent " + token.parseThing.getLocationString());
+            throw token.parseThing.createError("cannot interpret '" + token.ToString() + "' as a percent");
         }
     }
     public class EvaluationContext
@@ -664,7 +668,7 @@ namespace Gurpenator
             }
             public override void checkIsBoolean(CheckingContext context)
             {
-                throw new Exception("ERROR: cannot evaluate '" + operator_.text + operand.ToString() + "' as a conditional expression " + operator_.parseThing.getLocationString());
+                throw operator_.parseThing.createError("cannot evaluate '" + operator_.text + operand.ToString() + "' as a conditional expression");
             }
             public override void checkIsPercent(CheckingContext context) { operand.checkIsPercent(context); }
             public override decimal evalPercent(EvaluationContext context)

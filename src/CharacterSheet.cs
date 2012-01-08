@@ -79,11 +79,20 @@ namespace Gurpenator
         }
         private void load(string path)
         {
+            Action<string, string> handleError = delegate(string text, string windowTitle)
+            {
+                MessageBox.Show(this, text, windowTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                newCharacter();
+            };
             try { setCharacter(GurpsCharacter.fromJson(DataLoader.stringToJson(File.ReadAllText(path)), database)); }
             catch (IOException e)
             {
-                MessageBox.Show(this, e.Message, "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                newCharacter();
+                handleError(e.Message, "File Not Found");
+                return;
+            }
+            catch (GurpenatorException e)
+            {
+                handleError(e.Message, "Data Error");
                 return;
             }
             filePath = path;

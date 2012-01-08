@@ -41,6 +41,24 @@ namespace Gurpenator
             listBox.Items.Clear();
             foreach (var item in items)
                 listBox.Items.Add(item);
+
+            // check for errors
+            try
+            {
+                DataLoader.readData(new GurpsDatabase(), items);
+                setErrorMessage(null);
+            }
+            catch (GurpenatorException e)
+            {
+                setErrorMessage(e.Message);
+            }
+        }
+        private void setErrorMessage(string message)
+        {
+            if (message != null)
+                errorDisplayBox.Text = message;
+            errorDisplayBox.Visible = message != null;
+            okButton.Enabled = message == null;
         }
 
         private void removeButton_Click(object sender, EventArgs e)
@@ -53,6 +71,11 @@ namespace Gurpenator
         {
             Preferences.Instance.Databases = items;
             this.DialogResult = DialogResult.OK;
+        }
+
+        private void refreshButton_Click(object sender, EventArgs e)
+        {
+            refreshListBox();
         }
     }
 }

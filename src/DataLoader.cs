@@ -7,11 +7,19 @@ using System.Text.RegularExpressions;
 
 namespace Gurpenator
 {
+    public class GurpenatorException : Exception
+    {
+        public GurpenatorException(string message)
+            : base(message) { }
+    }
     static class DataLoader
     {
         // regex parsing? better than using a praser generator.
-        private const string nameBeginningCharacters = @"A-Za-z_ &\(\)!";
-        private const string nameMiddleCharacters = "0-9" + nameBeginningCharacters;
+        // TODO: this is broken. Can't allow " " in the list of valid characters or else identifiers swallow following keywords.
+        private const string boringNameCharacters = "A-Za-z_ &'";
+        public const string nonParenseNameCharacters = boringNameCharacters + "0-9";
+        private const string nameBeginningCharacters = boringNameCharacters + @"\(\)!";
+        private const string nameMiddleCharacters = nameBeginningCharacters + "0-9";
         private const string namePattern = "[" + nameBeginningCharacters + "][" + nameMiddleCharacters + "]*";
         private const string commentPattern = "\"(.*?)\"";
         private static readonly Regex thingStartLineRegex = new Regex(@"^\s*(" + namePattern + @")(?:\.(" + namePattern + @"))?\s*(:=|:|=|\+=|-=)([^\{" + "\"" + "]*)(?:" + commentPattern + @")?\s*(\{)?\s*$");
@@ -33,7 +41,7 @@ namespace Gurpenator
                     catch (ArgumentException)
                     {
                         GurpsProperty previousThing = nameToThing[property.name];
-                        throw new Exception("ERROR: duplicate definitions of \"" + parsedThing.name + "\". " + previousThing.parsedThing.getLocationString() + ", " + parsedThing.getLocationString());
+                        throw new GurpenatorException("duplicate definitions of \"" + parsedThing.name + "\". " + previousThing.parsedThing.getLocationString() + ", " + parsedThing.getLocationString());
                     }
                 }
             }
@@ -41,7 +49,7 @@ namespace Gurpenator
             // make sure some core attributes are defined
             foreach (string name in GurpsCharacter.coreAttributeNames.Concat(new string[] { GurpsCharacter.HUMAN }))
                 if (!nameToThing.ContainsKey(name))
-                    throw new Exception("ERROR: missing definition of core attribute \"" + name + "\"");
+                    throw new GurpenatorException("missing definition of core attribute \"" + name + "\"");
 
             checkFormulas(nameToThing);
 
@@ -109,7 +117,7 @@ namespace Gurpenator
                         if (!visited.Add(skill))
                         {
                             string names = string.Join(", ", from s in visited select s.name + " " + s.parsedThing.getLocationString());
-                            throw new Exception("ERROR: recursive skill inheritance: " + names);
+                            throw new GurpenatorException("recursive skill inheritance: " + names);
                         }
                         if (skill.parent is InheritedSkill)
                             recurse((InheritedSkill)skill.parent);
@@ -141,7 +149,7 @@ namespace Gurpenator
                         if (!visited.Add(localFunction))
                         {
                             string names = string.Join(", ", from f in visited select f.name + " " + f.parsedThing.getLocationString());
-                            throw new Exception("ERROR: recursive functions: " + names);
+                            throw new GurpenatorException("recursive functions: " + names);
                         }
                         foreach (var name in localFunction.usedNames())
                         {
@@ -248,7 +256,7 @@ namespace Gurpenator
                         }
                         Formula formula = FormulaParser.parseFormula(formulaText, parsedThing);
                         if (!(formula is Formula.Identifier))
-                            throw new Exception("ERROR: expected name of skill. got '" + formulaText + "' " + parsedThing.getLocationString());
+                            throw parsedThing.createError("expected name of skill. got '" + formulaText + "'");
                         return new InheritedSkill(parsedThing, difficulty, ((Formula.Identifier)formula).token);
                     }
                 case "=":
@@ -257,7 +265,7 @@ namespace Gurpenator
                         return new AttributeFunction(parsedThing, formula);
                     }
                 default:
-                    throw new Exception("ERROR: expected ':', '=', or ':='. Got '" + parsedThing.declarationOperator + "' " + parsedThing.getLocationString());
+                    throw parsedThing.createError("expected ':', '=', or ':='. Got '" + parsedThing.declarationOperator + "'");
             }
         }
 
@@ -273,7 +281,7 @@ namespace Gurpenator
                 string line;
                 if (isLineBlank(line = lines[i].Trim()))
                     continue;
-                Action throwParseError = delegate() { throw new Exception("ERROR: syntax problem (" + path + ":" + (i + 1) + ")"); };
+                Action throwParseError = delegate() { throw new GurpenatorException("syntax problem (" + path + ":" + (i + 1) + ")"); };
                 Match match = null;
                 // hack for local recursion (for DRY)
                 Func<ParsedThing> parseThing = null;
@@ -286,7 +294,7 @@ namespace Gurpenator
                     string comment = match.Groups[5].Success ? match.Groups[5].Value.Trim() : null;
                     ParsedThing thing = new ParsedThing(name, subPropertyName, declarationOperator, formula, comment, path, i + 1);
                     if (reservedWords.Contains(name))
-                        throw new Exception("ERROR: name '" + name + "' is reserved " + thing.getLocationString());
+                        throw thing.createError("name '" + name + "' is reserved");
                     bool hasOpenBrace = match.Groups[6].Success;
                     if (!hasOpenBrace)
                         return thing;
@@ -515,7 +523,7 @@ namespace Gurpenator
 
         public Exception createError(string message)
         {
-            return new Exception("ERROR: " + message + " " + getLocationString());
+            return new GurpenatorException(message + " " + getLocationString());
         }
     }
 
@@ -548,10 +556,6 @@ namespace Gurpenator
         {
             this.parsedThing = parsedThing;
         }
-        private void throwError(string message)
-        {
-            throw new Exception("ERROR: " + message + " " + parsedThing.getLocationString());
-        }
         private Formula parse(string text)
         {
             List<Token> tokens = new List<Token>(tokenize(text));
@@ -559,10 +563,10 @@ namespace Gurpenator
             Action<string> checkNextTokenIsSymbol = delegate(string symbolText)
             {
                 if (index >= tokens.Count)
-                    throwError("unexpected end of formula");
+                    throw parsedThing.createError("unexpected end of formula");
                 SymbolToken result = tokens[index++] as SymbolToken;
                 if (result == null || result.text != symbolText)
-                    throwError("expected '" + symbolText + "'. got '" + tokens[index - 1].ToString() + "'");
+                    throw parsedThing.createError("expected '" + symbolText + "'. got '" + tokens[index - 1].ToString() + "'");
             };
             Func<Formula> recurse = null;
             recurse = delegate()
@@ -617,7 +621,7 @@ namespace Gurpenator
                                 goto default; // handle "plus" and "minus" with the rest of the binary operators
                             default:
                                 if (!operatorPriority.ContainsKey(symbolToken.text))
-                                    throwError("symbol out of place '" + symbolToken.text + "'");
+                                    throw parsedThing.createError("symbol out of place '" + symbolToken.text + "'");
                                 treeBuffer.Add(new Formula.Binary(symbolToken));
                                 break;
                         }
@@ -629,23 +633,23 @@ namespace Gurpenator
                     Action<int> checkHasClosedLeft = delegate(int i)
                     {
                         if (i >= treeBuffer.Count)
-                            throwError("expected something after '" + treeBuffer[i - 1].ToString() + "'");
+                            throw parsedThing.createError("expected something after '" + treeBuffer[i - 1].ToString() + "'");
                         Formula formula = treeBuffer[i];
                         if (formula is Formula.Binary)
                             if (((Formula.Binary)formula).left == Formula.NullFormula.Instance)
-                                throwError("expected something between '" + treeBuffer[i - 1].ToString() + "' and '" + ((Formula.Binary)formula).operator_.text + "'");
+                                throw parsedThing.createError("expected something between '" + treeBuffer[i - 1].ToString() + "' and '" + ((Formula.Binary)formula).operator_.text + "'");
                     };
                     Action<int> checkHasClosedRight = delegate(int i)
                     {
                         if (i < 0)
-                            throwError("can't start an expression with '" + treeBuffer[i + 1].ToString() + "'");
+                            throw parsedThing.createError("can't start an expression with '" + treeBuffer[i + 1].ToString() + "'");
                         Formula formula = treeBuffer[i];
                         if (formula is Formula.Binary)
                             if (((Formula.Binary)formula).right == Formula.NullFormula.Instance)
-                                throwError("expected something between '" + ((Formula.Binary)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
+                                throw parsedThing.createError("expected something between '" + ((Formula.Binary)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
                         if (formula is Formula.UnaryPrefix)
                             if (((Formula.UnaryPrefix)formula).operand == Formula.NullFormula.Instance)
-                                throwError("expected something between '" + ((Formula.UnaryPrefix)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
+                                throw parsedThing.createError("expected something between '" + ((Formula.UnaryPrefix)formula).operator_.text + "' and '" + treeBuffer[i + 1].ToString() + "'");
                     };
                     // O(n*n*m). Oh well.
                     foreach (List<string> operatorGroup in operatorPrecedenceGroups)
@@ -681,16 +685,16 @@ namespace Gurpenator
                         }
                     }
                     if (treeBuffer.Count == 0)
-                        throwError("empty expression");
+                        throw parsedThing.createError("empty expression");
                     if (treeBuffer.Count > 1)
-                        throwError("expected end of expression after '" + treeBuffer[0].ToString() + "'");
+                        throw parsedThing.createError("expected end of expression after '" + treeBuffer[0].ToString() + "'");
                     return treeBuffer[0];
                 }
             };
             {
                 Formula result = recurse();
                 if (index != tokens.Count)
-                    throwError("expected end of expression. got '" + tokens[index].ToString() + "'");
+                    throw parsedThing.createError("expected end of expression. got '" + tokens[index].ToString() + "'");
                 return result;
             }
         }
@@ -700,7 +704,7 @@ namespace Gurpenator
             @"(?<symbol>\(|\)|\*|\+|,|-|/|<=|<|>=|>|IF|THEN|ELSE|AND|OR)|" +
             @"(?<numberLiteral>\d+%?)|" +
             @"(?<booleanLiteral>true|false)|" +
-            @"(?<identifier>[A-Za-z_](?:[A-Za-z0-9_ &]*(?:\([A-Za-z0-9_ &]*\))?)*)|" +
+            @"(?<identifier>[A-Za-z_](?:[" + DataLoader.nonParenseNameCharacters + @"]*(?:\([" + DataLoader.nonParenseNameCharacters + @"]*\))?)*)|" +
             @"(?<invalid>.)" // catch anything else as invalid
         );
         private IEnumerable<Token> tokenize(string text)
@@ -727,8 +731,7 @@ namespace Gurpenator
                         yield return new BooleanToken(parsedThing, match.Value == "true");
                         break;
                     case "invalid":
-                        throwError("invalid character in formula '" + match.Value + "'");
-                        throw null;
+                        throw parsedThing.createError("invalid character in formula '" + match.Value + "'");
                     default:
                         throw null;
                 }
