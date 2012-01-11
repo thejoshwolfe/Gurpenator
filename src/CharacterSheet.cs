@@ -208,7 +208,13 @@ namespace Gurpenator
             // reload database and character
             database = new GurpsDatabase();
             DataLoader.readData(database, Preferences.Instance.Databases);
-            setCharacter(GurpsCharacter.fromJson(character.toJson(), database));
+            try { setCharacter(GurpsCharacter.fromJson(character.toJson(), database)); }
+            catch (GurpenatorException ex)
+            {
+                // TODO unify everything
+                MessageBox.Show(this, ex.Message, "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                newCharacter();
+            }
         }
 
         private void diceRollerToolStripMenuItem_Click(object sender, EventArgs e)

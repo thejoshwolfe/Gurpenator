@@ -648,6 +648,7 @@ namespace Gurpenator
             public UnaryPrefix(SymbolToken operator_, Formula operand)
             {
                 this.operator_ = operator_;
+                this.operand = operand;
             }
             public override IEnumerable<string> usedNames() { foreach (string reult in operand.usedNames()) yield return reult; }
             public override string ToString()
