@@ -83,6 +83,9 @@ namespace Gurpenator
         public List<Effect> effects = new List<Effect>();
         public List<Effect> effectedBy = new List<Effect>();
         public virtual IEnumerable<string> usedNames() { yield break; }
+
+        public virtual void resolveInheritance(Dictionary<string, GurpsProperty> nameToThing) { }
+        public virtual void checkFormula(Dictionary<string, GurpsProperty> nameToThing) { }
     }
     public enum SkillDifficulty
     {
@@ -149,6 +152,10 @@ namespace Gurpenator
         public override IEnumerable<string> usedNames() { return formula.usedNames(); }
         public override SkillDifficulty getDifficulty() { return difficulty; }
         public override Formula getBaseFormula() { return formula; }
+        public override void checkFormula(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            formula.checkIsInt(new CheckingContext(nameToThing, null));
+        }
     }
     public class InheritedSkill : AbstractSkill
     {
@@ -177,6 +184,15 @@ namespace Gurpenator
         }
         public override Formula getBaseFormula() { return parent.getBaseFormula(); }
         public override IEnumerable<string> usedNames() { return parent.usedNames(); }
+        public override void resolveInheritance(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            IdentifierToken parentNameToken = parentSkillToken;
+            GurpsProperty parent;
+            try { parent = nameToThing[parentNameToken.text]; }
+            catch (KeyNotFoundException) { throw parentNameToken.parseThing.createError("Parent skill not defined '" + parentNameToken.text + "'"); }
+            if ((this.parent = parent as AbstractSkill) == null)
+                throw parentNameToken.parseThing.createError("Parent is not a skill '" + parentNameToken.text + "'");
+        }
     }
     public abstract class Advantage : GurpsProperty
     {
@@ -187,6 +203,10 @@ namespace Gurpenator
             this.costFormula = costFormula;
         }
         public override IEnumerable<string> usedNames() { return costFormula.usedNames(); }
+        public override void checkFormula(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            costFormula.checkIsInt(new CheckingContext(null, this));
+        }
     }
     public class IntAdvantage : Advantage
     {
@@ -211,6 +231,10 @@ namespace Gurpenator
             this.formula = formula;
         }
         public override IEnumerable<string> usedNames() { return formula.usedNames(); }
+        public override void checkFormula(Dictionary<string, GurpsProperty> nameToThing)
+        {
+            formula.checkIsInt(new CheckingContext(nameToThing, null));
+        }
     }
 
     public abstract class Effect
@@ -226,16 +250,30 @@ namespace Gurpenator
             this.formula = formula;
             this.parsedThing = parsedThing;
         }
+
+        public abstract void checkFormula(Dictionary<string, GurpsProperty> nameToThing, GurpsProperty affectedProperty);
     }
     public class CostModifier : Effect
     {
         public CostModifier(GurpsProperty owner, string traitName, Formula formula, ParsedThing parsedThing)
             : base(owner, traitName, formula, parsedThing) { }
+        public override void checkFormula(Dictionary<string, GurpsProperty> nameToThing, GurpsProperty affectedProperty)
+        {
+            if (affectedProperty is AttributeFunction) // TODO: use hasCost or whatever
+                throw parsedThing.createError("Cannot modify the cost of a trait with no cost");
+            formula.checkIsPercent(new CheckingContext(nameToThing, owner));
+        }
     }
     public class TraitModifier : Effect
     {
         public TraitModifier(GurpsProperty owner, string traitName, Formula formula, ParsedThing parsedThing)
             : base(owner, traitName, formula, parsedThing) { }
+        public override void checkFormula(Dictionary<string, GurpsProperty> nameToThing, GurpsProperty affectedProperty)
+        {
+            if (affectedProperty is BooleanAdvantage) // TODO: use hasLevels or whatever
+                throw parsedThing.createError("Cannot modify the level of a trait with no level");
+            formula.checkIsInt(new CheckingContext(nameToThing, owner));
+        }
     }
 
     public class PurchasedProperty
@@ -520,12 +558,14 @@ namespace Gurpenator
         }
         private GurpsProperty getProperty(IdentifierToken token)
         {
+            if (token.text == "level")
+                if (enclosingProperty != null)
+                    return enclosingProperty;
+
+            if (nameToThing == null)
+                throwNotAnIntError(token);
             try { return nameToThing[token.text]; }
             catch (KeyNotFoundException) { }
-
-            if (token.text == "level")
-                if (enclosingProperty is IntAdvantage || enclosingProperty is AbstractSkill)
-                    return enclosingProperty;
 
             throw token.parseThing.createError("name not defined '" + token.text + "'");
         }

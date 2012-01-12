@@ -7,6 +7,32 @@ using System.Text.RegularExpressions;
 
 namespace Gurpenator
 {
+    /// <summary>for performance analysis</summary>
+    public class TimeTracker : IDisposable
+    {
+        [System.Runtime.InteropServices.DllImport("Kernel32.dll")]
+        private static extern bool AllocConsole();
+        static TimeTracker()
+        {
+            AllocConsole();
+        }
+
+        private readonly DateTime start;
+        private readonly string name;
+        public TimeTracker(string name = "")
+        {
+            this.name = name;
+            start = DateTime.Now;
+        }
+        public void Dispose()
+        {
+            TimeSpan timeSpan = DateTime.Now - start;
+            string message = timeSpan.ToString();
+            if (name != "")
+                message = name + ": " + message;
+            Console.WriteLine(message);
+        }
+    }
     public class GurpenatorException : Exception
     {
         public GurpenatorException(string message)
@@ -64,44 +90,21 @@ namespace Gurpenator
 
         private static void checkFormulas(Dictionary<string, GurpsProperty> nameToThing)
         {
+            // resolve inheritance
+            foreach (GurpsProperty property in nameToThing.Values)
+                property.resolveInheritance(nameToThing);
             // check names are defined; check variables are proper type; link parent skills
             foreach (GurpsProperty property in nameToThing.Values)
+                property.checkFormula(nameToThing);
+            foreach (GurpsProperty property in nameToThing.Values)
             {
-                CheckingContext context = new CheckingContext(nameToThing, property);
-                if (property is Advantage) { ((Advantage)property).costFormula.checkIsInt(context); }
-                else if (property is AttributeFunction) { ((AttributeFunction)property).formula.checkIsInt(context); }
-                else if (property is Skill) { ((Skill)property).formula.checkIsInt(context); }
-                else if (property is InheritedSkill)
-                {
-                    InheritedSkill inheritedSkill = (InheritedSkill)property;
-                    IdentifierToken parentNameToken = inheritedSkill.parentSkillToken;
-                    GurpsProperty parent;
-                    try { parent = nameToThing[parentNameToken.text]; }
-                    catch (KeyNotFoundException) { throw parentNameToken.parseThing.createError("Parent skill not defined '" + parentNameToken.text + "'"); }
-                    if (!(parent is AbstractSkill))
-                        throw parentNameToken.parseThing.createError("Parent is not a skill '" + parentNameToken.text + "'");
-                    inheritedSkill.parent = (AbstractSkill)parent;
-                }
                 foreach (Effect effect in property.effects)
                 {
                     GurpsProperty affectedProperty;
                     try { affectedProperty = nameToThing[effect.traitName]; }
-                    catch (KeyNotFoundException) { throw effect.parsedThing.createError("Name not found '" + effect.traitName + "'"); }
+                    catch (KeyNotFoundException) { throw effect.parsedThing.createError("Trait not defined '" + effect.traitName + "'"); }
                     affectedProperty.effectedBy.Add(effect);
-                    if (effect is TraitModifier)
-                    {
-                        if (affectedProperty is BooleanAdvantage) // TODO: use hasLevels or whatever
-                            throw effect.parsedThing.createError("Cannot modify the level of a trait with no level");
-                        effect.formula.checkIsInt(context);
-                    }
-                    else if (effect is CostModifier)
-                    {
-                        if (affectedProperty is AttributeFunction) // TODO: use hasCost or whatever
-                            throw effect.parsedThing.createError("Cannot modify the cost of a trait with no cost");
-                        effect.formula.checkIsPercent(context);
-                    }
-                    else
-                        throw null;
+                    effect.checkFormula(nameToThing, affectedProperty);
                 }
             }
 
